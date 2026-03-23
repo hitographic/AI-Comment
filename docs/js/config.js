@@ -20,8 +20,13 @@ const CONFIG = {
         PERSONA: 'acai_persona',
     },
 
-    // Gemini API
-    GEMINI_API_URL: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
+    // Gemini API - menggunakan model gratis dengan fallback
+    GEMINI_API_BASE: 'https://generativelanguage.googleapis.com/v1beta/models/',
+    GEMINI_MODELS: [
+        'gemini-1.5-flash',      // Gratis, stabil, cepat
+        'gemini-1.5-flash-8b',   // Fallback gratis, lebih ringan
+        'gemini-2.0-flash',      // Fallback kalau model lain gagal
+    ],
 
     // Default settings
     DEFAULT_SETTINGS: {
