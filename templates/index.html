@@ -1,0 +1,1682 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔥 Gen Z Auto Comment Bot</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-card: #1a1a2e;
+            --bg-card-hover: #1f1f35;
+            --accent-purple: #7c3aed;
+            --accent-pink: #ec4899;
+            --accent-blue: #3b82f6;
+            --accent-green: #10b981;
+            --accent-orange: #f59e0b;
+            --accent-red: #ef4444;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --border: #2a2a3e;
+            --gradient-1: linear-gradient(135deg, #7c3aed, #ec4899);
+            --gradient-2: linear-gradient(135deg, #3b82f6, #7c3aed);
+            --gradient-ig: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+            --gradient-tiktok: linear-gradient(135deg, #00f2ea, #ff0050);
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+            --shadow-lg: 0 10px 25px -3px rgba(0, 0, 0, 0.4);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated Background */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: var(--bg-primary);
+        }
+
+        .bg-animation::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 20% 80%, rgba(124, 58, 237, 0.08) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 20%, rgba(236, 72, 153, 0.08) 0%, transparent 50%),
+                        radial-gradient(circle at 50% 50%, rgba(59, 130, 246, 0.05) 0%, transparent 50%);
+            animation: bgFloat 20s ease-in-out infinite;
+        }
+
+        @keyframes bgFloat {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(30px, -30px) rotate(1deg); }
+            66% { transform: translate(-20px, 20px) rotate(-1deg); }
+        }
+
+        /* Navbar */
+        .navbar-custom {
+            background: rgba(10, 10, 15, 0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            padding: 0.75rem 0;
+        }
+
+        .navbar-brand {
+            font-weight: 800;
+            font-size: 1.3rem;
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-link {
+            color: var(--text-secondary) !important;
+            font-weight: 500;
+            padding: 0.5rem 1rem !important;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: var(--text-primary) !important;
+            background: rgba(124, 58, 237, 0.1);
+        }
+
+        /* Cards */
+        .card-custom {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .card-custom:hover {
+            background: var(--bg-card-hover);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        /* Platform Cards */
+        .platform-card {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .platform-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+        }
+
+        .platform-card.instagram::before {
+            background: var(--gradient-ig);
+        }
+
+        .platform-card.tiktok::before {
+            background: var(--gradient-tiktok);
+        }
+
+        .platform-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+        }
+
+        .platform-icon.ig {
+            background: var(--gradient-ig);
+        }
+
+        .platform-icon.tt {
+            background: var(--gradient-tiktok);
+        }
+
+        /* Stats Cards */
+        .stat-card {
+            text-align: center;
+            padding: 1.25rem;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 800;
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 0.25rem;
+        }
+
+        /* Buttons */
+        .btn-glow {
+            position: relative;
+            padding: 0.6rem 1.5rem;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+
+        .btn-start {
+            background: var(--gradient-1);
+            color: white;
+        }
+
+        .btn-start:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(124, 58, 237, 0.4);
+            color: white;
+        }
+
+        .btn-stop {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+        }
+
+        .btn-stop:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4);
+            color: white;
+        }
+
+        .btn-outline-custom {
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-primary);
+            padding: 0.5rem 1rem;
+            border-radius: 10px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .btn-outline-custom:hover {
+            background: rgba(124, 58, 237, 0.1);
+            border-color: var(--accent-purple);
+            color: var(--text-primary);
+        }
+
+        /* Inputs */
+        .input-custom {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            border-radius: 10px;
+            padding: 0.65rem 1rem;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+
+        .input-custom:focus {
+            background: var(--bg-secondary);
+            border-color: var(--accent-purple);
+            color: var(--text-primary);
+            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+        }
+
+        .input-custom::placeholder {
+            color: var(--text-muted);
+        }
+
+        /* Tags Input */
+        .tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            min-height: 44px;
+            align-items: center;
+        }
+
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.25rem 0.6rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .tag.hashtag {
+            background: rgba(124, 58, 237, 0.2);
+            color: #a78bfa;
+        }
+
+        .tag.user {
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+        }
+
+        .tag .remove-tag {
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        .tag .remove-tag:hover {
+            opacity: 1;
+        }
+
+        .tags-input {
+            border: none;
+            background: transparent;
+            color: var(--text-primary);
+            outline: none;
+            font-size: 0.85rem;
+            min-width: 100px;
+            flex: 1;
+        }
+
+        .tags-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        /* Log Console */
+        .log-console {
+            background: #0d0d14;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            max-height: 350px;
+            overflow-y: auto;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 0.8rem;
+        }
+
+        .log-entry {
+            padding: 0.4rem 1rem;
+            border-bottom: 1px solid rgba(42, 42, 62, 0.3);
+            display: flex;
+            gap: 0.75rem;
+            align-items: flex-start;
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+
+        .log-time {
+            color: var(--text-muted);
+            white-space: nowrap;
+            font-size: 0.75rem;
+        }
+
+        .log-message {
+            word-break: break-word;
+        }
+
+        .log-entry.success .log-message { color: var(--accent-green); }
+        .log-entry.error .log-message { color: var(--accent-red); }
+        .log-entry.warning .log-message { color: var(--accent-orange); }
+        .log-entry.info .log-message { color: var(--text-secondary); }
+
+        /* Status Badge */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .status-badge.running {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--accent-green);
+        }
+
+        .status-badge.stopped {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--accent-red);
+        }
+
+        .status-badge.offline {
+            background: rgba(100, 116, 139, 0.15);
+            color: var(--text-muted);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .status-dot.running {
+            background: var(--accent-green);
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.stopped { background: var(--accent-red); }
+        .status-dot.offline { background: var(--text-muted); }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        /* Comment Preview */
+        .comment-preview {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem 1.25rem;
+            margin: 0.5rem 0;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            animation: fadeInUp 0.3s ease;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Toggle Switch */
+        .toggle-switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--border);
+            transition: 0.3s;
+            border-radius: 24px;
+        }
+
+        .toggle-slider::before {
+            content: '';
+            position: absolute;
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background: white;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background: var(--accent-purple);
+        }
+
+        .toggle-switch input:checked + .toggle-slider::before {
+            transform: translateX(20px);
+        }
+
+        /* Sections */
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .section-subtitle {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+
+        /* Tab Custom */
+        .tab-custom {
+            display: flex;
+            gap: 0.25rem;
+            background: var(--bg-secondary);
+            padding: 0.25rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 0.6rem 1rem;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.85rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .tab-btn.active {
+            background: var(--bg-card);
+            color: var(--text-primary);
+        }
+
+        .tab-btn:hover:not(.active) {
+            color: var(--text-secondary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeInUp 0.3s ease;
+        }
+
+        /* Range Slider */
+        .range-custom {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 6px;
+            background: var(--border);
+            border-radius: 3px;
+            outline: none;
+        }
+
+        .range-custom::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--accent-purple);
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(124, 58, 237, 0.4);
+        }
+
+        /* Toast */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+        }
+
+        .toast-custom {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            border-radius: 12px;
+            padding: 1rem 1.25rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            box-shadow: var(--shadow-lg);
+            animation: slideInRight 0.3s ease;
+            max-width: 360px;
+        }
+
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* Category Badge */
+        .category-badge {
+            display: inline-block;
+            padding: 0.3rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-secondary);
+        }
+
+        .category-badge.selected {
+            background: rgba(124, 58, 237, 0.2);
+            border-color: var(--accent-purple);
+            color: #a78bfa;
+        }
+
+        .category-badge:hover {
+            border-color: var(--accent-purple);
+        }
+
+        /* Modal Custom */
+        .modal-custom .modal-content {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+        }
+
+        .modal-custom .modal-header {
+            border-bottom: 1px solid var(--border);
+        }
+
+        .modal-custom .modal-footer {
+            border-top: 1px solid var(--border);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .stat-number { font-size: 1.5rem; }
+            .card-custom { padding: 1rem; }
+        }
+
+        /* Hero Section */
+        .hero-section {
+            padding: 2rem 0 1rem;
+            text-align: center;
+        }
+
+        .hero-title {
+            font-size: 2.2rem;
+            font-weight: 900;
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .hero-subtitle {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        /* Select Custom */
+        .select-custom {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            border-radius: 10px;
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+        }
+
+        .select-custom:focus {
+            border-color: var(--accent-purple);
+            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+        }
+
+        select.select-custom option {
+            background: var(--bg-card);
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-animation"></div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-custom sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-robot me-2"></i>GenZ AutoComment
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" style="border-color: var(--border);">
+                <i class="fas fa-bars" style="color: var(--text-primary);"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" onclick="showSection('dashboard')">
+                            <i class="fas fa-chart-line me-1"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="showSection('instagram')">
+                            <i class="fab fa-instagram me-1"></i> Instagram
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="showSection('tiktok')">
+                            <i class="fab fa-tiktok me-1"></i> TikTok
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="showSection('generator')">
+                            <i class="fas fa-magic me-1"></i> Generator
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="showSection('settings')">
+                            <i class="fas fa-cog me-1"></i> Settings
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-4">
+
+        <!-- ==================== DASHBOARD ==================== -->
+        <div id="section-dashboard" class="section-page">
+            <div class="hero-section">
+                <h1 class="hero-title">🔥 Auto Comment Bot</h1>
+                <p class="hero-subtitle">Otomatis komentar di Instagram & TikTok dengan gaya bahasa Gen Z yang kekinian!</p>
+            </div>
+
+            <!-- Stats Row -->
+            <div class="row g-3 mb-4">
+                <div class="col-6 col-md-3">
+                    <div class="card-custom stat-card">
+                        <div class="stat-number" id="stat-total">0</div>
+                        <div class="stat-label">Total Komentar</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card-custom stat-card">
+                        <div class="stat-number" id="stat-ig-today">0</div>
+                        <div class="stat-label">IG Hari Ini</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card-custom stat-card">
+                        <div class="stat-number" id="stat-tt-today">0</div>
+                        <div class="stat-label">TikTok Hari Ini</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card-custom stat-card">
+                        <div class="stat-number" id="stat-templates">0</div>
+                        <div class="stat-label">Template Ready</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Platform Overview -->
+            <div class="row g-3 mb-4">
+                <!-- Instagram Card -->
+                <div class="col-md-6">
+                    <div class="card-custom platform-card instagram">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="platform-icon ig">
+                                    <i class="fab fa-instagram text-white"></i>
+                                </div>
+                                <div>
+                                    <h5 class="mb-0 fw-bold">Instagram</h5>
+                                    <small class="text-muted" id="ig-username">Belum login</small>
+                                </div>
+                            </div>
+                            <div id="ig-status">
+                                <span class="status-badge offline">
+                                    <span class="status-dot offline"></span>
+                                    Offline
+                                </span>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <span class="badge bg-dark" style="font-size: 0.75rem;">
+                                <i class="fas fa-comment me-1"></i>
+                                Hari ini: <span id="ig-count-today">0</span>
+                            </span>
+                            <span class="badge bg-dark" style="font-size: 0.75rem;">
+                                <i class="fas fa-chart-bar me-1"></i>
+                                Total: <span id="ig-count-total">0</span>
+                            </span>
+                        </div>
+                        <div class="mt-3">
+                            <button class="btn btn-sm btn-glow btn-start me-1" onclick="showSection('instagram')">
+                                <i class="fas fa-arrow-right me-1"></i> Kelola
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TikTok Card -->
+                <div class="col-md-6">
+                    <div class="card-custom platform-card tiktok">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="platform-icon tt">
+                                    <i class="fab fa-tiktok text-white"></i>
+                                </div>
+                                <div>
+                                    <h5 class="mb-0 fw-bold">TikTok</h5>
+                                    <small class="text-muted" id="tt-username">Belum login</small>
+                                </div>
+                            </div>
+                            <div id="tt-status">
+                                <span class="status-badge offline">
+                                    <span class="status-dot offline"></span>
+                                    Offline
+                                </span>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <span class="badge bg-dark" style="font-size: 0.75rem;">
+                                <i class="fas fa-comment me-1"></i>
+                                Hari ini: <span id="tt-count-today">0</span>
+                            </span>
+                            <span class="badge bg-dark" style="font-size: 0.75rem;">
+                                <i class="fas fa-chart-bar me-1"></i>
+                                Total: <span id="tt-count-total">0</span>
+                            </span>
+                        </div>
+                        <div class="mt-3">
+                            <button class="btn btn-sm btn-glow btn-start me-1" onclick="showSection('tiktok')">
+                                <i class="fas fa-arrow-right me-1"></i> Kelola
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Comment Generator -->
+            <div class="card-custom">
+                <h6 class="section-title">⚡ Quick Comment Preview</h6>
+                <p class="section-subtitle">Lihat contoh komentar yang akan digenerate bot</p>
+                <div id="quick-comments"></div>
+                <button class="btn btn-sm btn-outline-custom mt-2" onclick="loadQuickComments()">
+                    <i class="fas fa-sync-alt me-1"></i> Generate Lagi
+                </button>
+            </div>
+        </div>
+
+        <!-- ==================== INSTAGRAM ==================== -->
+        <div id="section-instagram" class="section-page" style="display:none;">
+            <div class="d-flex align-items-center gap-3 mb-4">
+                <div class="platform-icon ig">
+                    <i class="fab fa-instagram text-white"></i>
+                </div>
+                <div>
+                    <h3 class="mb-0 fw-bold">Instagram Auto Comment</h3>
+                    <small class="text-muted">Otomatis komentar di postingan Instagram</small>
+                </div>
+            </div>
+
+            <!-- Login Section -->
+            <div class="card-custom mb-3" id="ig-login-section">
+                <h6 class="section-title">🔑 Login Instagram</h6>
+                <p class="section-subtitle">Masukkan credentials Instagram kamu</p>
+                <div class="row g-2">
+                    <div class="col-md-5">
+                        <input type="text" class="form-control input-custom" id="ig-input-username" placeholder="Username Instagram">
+                    </div>
+                    <div class="col-md-5">
+                        <input type="password" class="form-control input-custom" id="ig-input-password" placeholder="Password">
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-glow btn-start w-100" onclick="loginInstagram()">
+                            <i class="fas fa-sign-in-alt me-1"></i> Login
+                        </button>
+                    </div>
+                </div>
+                <small class="text-muted mt-2 d-block">
+                    ⚠️ Credentials hanya disimpan di session, tidak di database. Gunakan akun yang aman.
+                </small>
+            </div>
+
+            <!-- Target Settings -->
+            <div class="card-custom mb-3">
+                <h6 class="section-title">🎯 Target Komentar</h6>
+                <p class="section-subtitle">Tentukan hashtag dan user yang ingin dikomentari</p>
+
+                <label class="form-label small text-muted mb-1">Hashtag Target</label>
+                <div class="tags-container mb-3" id="ig-hashtags-container">
+                    <input type="text" class="tags-input" id="ig-hashtag-input" placeholder="Ketik hashtag, tekan Enter..." onkeydown="addTag(event, 'ig', 'hashtag')">
+                </div>
+
+                <label class="form-label small text-muted mb-1">User Target</label>
+                <div class="tags-container" id="ig-users-container">
+                    <input type="text" class="tags-input" id="ig-user-input" placeholder="Ketik username, tekan Enter..." onkeydown="addTag(event, 'ig', 'user')">
+                </div>
+            </div>
+
+            <!-- Control -->
+            <div class="card-custom mb-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="section-title mb-0">🤖 Auto Comment</h6>
+                        <small class="text-muted" id="ig-auto-status">Belum aktif</small>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-glow btn-start" id="ig-start-btn" onclick="startIG()">
+                            <i class="fas fa-play me-1"></i> Start
+                        </button>
+                        <button class="btn btn-glow btn-stop" id="ig-stop-btn" onclick="stopIG()" style="display:none;">
+                            <i class="fas fa-stop me-1"></i> Stop
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Logs -->
+            <div class="card-custom">
+                <h6 class="section-title">📋 Activity Log</h6>
+                <div class="log-console mt-2" id="ig-log">
+                    <div class="log-entry info">
+                        <span class="log-time">--:--:--</span>
+                        <span class="log-message">Menunggu aksi... Login dulu bestie! 🔑</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== TIKTOK ==================== -->
+        <div id="section-tiktok" class="section-page" style="display:none;">
+            <div class="d-flex align-items-center gap-3 mb-4">
+                <div class="platform-icon tt">
+                    <i class="fab fa-tiktok text-white"></i>
+                </div>
+                <div>
+                    <h3 class="mb-0 fw-bold">TikTok Auto Comment</h3>
+                    <small class="text-muted">Otomatis komentar di video TikTok</small>
+                </div>
+            </div>
+
+            <!-- Login -->
+            <div class="card-custom mb-3" id="tt-login-section">
+                <h6 class="section-title">🔑 Login TikTok</h6>
+                <p class="section-subtitle">Masukkan Session ID dari cookie browser kamu</p>
+                <div class="row g-2">
+                    <div class="col-md-10">
+                        <input type="text" class="form-control input-custom" id="tt-input-session" placeholder="Paste sessionid cookie disini...">
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-glow btn-start w-100" onclick="loginTikTok()">
+                            <i class="fas fa-sign-in-alt me-1"></i> Login
+                        </button>
+                    </div>
+                </div>
+                <small class="text-muted mt-2 d-block">
+                    💡 Cara mendapatkan session ID: Buka TikTok di browser → F12 → Application → Cookies → Cari "sessionid"
+                </small>
+            </div>
+
+            <!-- Target -->
+            <div class="card-custom mb-3">
+                <h6 class="section-title">🎯 Target Komentar</h6>
+                <p class="section-subtitle">Tentukan hashtag dan user TikTok</p>
+
+                <label class="form-label small text-muted mb-1">Hashtag Target</label>
+                <div class="tags-container mb-3" id="tt-hashtags-container">
+                    <input type="text" class="tags-input" id="tt-hashtag-input" placeholder="Ketik hashtag, tekan Enter..." onkeydown="addTag(event, 'tt', 'hashtag')">
+                </div>
+
+                <label class="form-label small text-muted mb-1">User Target</label>
+                <div class="tags-container" id="tt-users-container">
+                    <input type="text" class="tags-input" id="tt-user-input" placeholder="Ketik username, tekan Enter..." onkeydown="addTag(event, 'tt', 'user')">
+                </div>
+            </div>
+
+            <!-- Control -->
+            <div class="card-custom mb-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="section-title mb-0">🤖 Auto Comment</h6>
+                        <small class="text-muted" id="tt-auto-status">Belum aktif</small>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-glow btn-start" id="tt-start-btn" onclick="startTT()">
+                            <i class="fas fa-play me-1"></i> Start
+                        </button>
+                        <button class="btn btn-glow btn-stop" id="tt-stop-btn" onclick="stopTT()" style="display:none;">
+                            <i class="fas fa-stop me-1"></i> Stop
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Logs -->
+            <div class="card-custom">
+                <h6 class="section-title">📋 Activity Log</h6>
+                <div class="log-console mt-2" id="tt-log">
+                    <div class="log-entry info">
+                        <span class="log-time">--:--:--</span>
+                        <span class="log-message">Menunggu aksi... Login dulu bestie! 🔑</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== GENERATOR ==================== -->
+        <div id="section-generator" class="section-page" style="display:none;">
+            <div class="d-flex align-items-center gap-3 mb-4">
+                <div class="platform-icon" style="background: var(--gradient-2);">
+                    <i class="fas fa-magic text-white"></i>
+                </div>
+                <div>
+                    <h3 class="mb-0 fw-bold">Comment Generator</h3>
+                    <small class="text-muted">Preview dan test komentar Gen Z sebelum auto comment</small>
+                </div>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-md-5">
+                    <div class="card-custom">
+                        <h6 class="section-title">⚙️ Pengaturan Generate</h6>
+
+                        <label class="form-label small text-muted mt-3">Mode</label>
+                        <select class="form-select select-custom" id="gen-mode">
+                            <option value="template">📝 Template (Tanpa AI)</option>
+                            <option value="ai">🤖 AI (OpenAI GPT)</option>
+                        </select>
+
+                        <label class="form-label small text-muted mt-3">Kategori</label>
+                        <div class="d-flex flex-wrap gap-2" id="gen-categories">
+                            <!-- Filled by JS -->
+                        </div>
+
+                        <label class="form-label small text-muted mt-3">Tipe Postingan (untuk AI mode)</label>
+                        <select class="form-select select-custom" id="gen-post-type">
+                            <option value="general">🌐 General</option>
+                            <option value="food">🍔 Makanan</option>
+                            <option value="travel">✈️ Travel</option>
+                            <option value="fashion">👗 Fashion</option>
+                            <option value="funny">😂 Lucu</option>
+                            <option value="motivational">💪 Motivasi</option>
+                        </select>
+
+                        <label class="form-label small text-muted mt-3">Caption Postingan (opsional, untuk AI)</label>
+                        <textarea class="form-control input-custom" id="gen-caption" rows="3" placeholder="Paste caption postingan disini untuk komentar yang lebih relevan..."></textarea>
+
+                        <label class="form-label small text-muted mt-3">Jumlah Komentar</label>
+                        <input type="range" class="range-custom" id="gen-count" min="1" max="20" value="5">
+                        <small class="text-muted"><span id="gen-count-label">5</span> komentar</small>
+
+                        <button class="btn btn-glow btn-start w-100 mt-3" onclick="generateComments()">
+                            <i class="fas fa-magic me-1"></i> Generate Komentar!
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-7">
+                    <div class="card-custom">
+                        <h6 class="section-title">💬 Preview Komentar</h6>
+                        <p class="section-subtitle">Komentar yang akan digenerate oleh bot</p>
+                        <div id="gen-results">
+                            <div class="text-center py-5">
+                                <i class="fas fa-comments fa-3x mb-3" style="color: var(--text-muted);"></i>
+                                <p class="text-muted">Klik "Generate Komentar" untuk melihat preview</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== SETTINGS ==================== -->
+        <div id="section-settings" class="section-page" style="display:none;">
+            <div class="d-flex align-items-center gap-3 mb-4">
+                <div class="platform-icon" style="background: linear-gradient(135deg, #64748b, #475569);">
+                    <i class="fas fa-cog text-white"></i>
+                </div>
+                <div>
+                    <h3 class="mb-0 fw-bold">Settings</h3>
+                    <small class="text-muted">Konfigurasi bot auto comment</small>
+                </div>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="card-custom">
+                        <h6 class="section-title">⏱️ Timing & Limits</h6>
+                        <p class="section-subtitle">Atur interval dan batasan komentar</p>
+
+                        <label class="form-label small text-muted">Interval Minimum (detik)</label>
+                        <input type="number" class="form-control input-custom mb-3" id="set-interval-min" value="30" min="10" max="300">
+
+                        <label class="form-label small text-muted">Interval Maximum (detik)</label>
+                        <input type="number" class="form-control input-custom mb-3" id="set-interval-max" value="120" min="30" max="600">
+
+                        <label class="form-label small text-muted">Max Komentar Per Hari</label>
+                        <input type="number" class="form-control input-custom mb-3" id="set-max-per-day" value="50" min="5" max="200">
+
+                        <div class="alert" style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: 10px; color: var(--accent-orange); font-size: 0.8rem;">
+                            <i class="fas fa-exclamation-triangle me-1"></i>
+                            Interval terlalu cepat bisa menyebabkan akun kena ban. Recommended: minimal 30 detik.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card-custom">
+                        <h6 class="section-title">🎨 Comment Style</h6>
+                        <p class="section-subtitle">Atur gaya komentar bot</p>
+
+                        <label class="form-label small text-muted">Mode Komentar</label>
+                        <select class="form-select select-custom mb-3" id="set-comment-mode">
+                            <option value="template">📝 Template</option>
+                            <option value="ai">🤖 AI (OpenAI)</option>
+                        </select>
+
+                        <label class="form-label small text-muted">Kategori Aktif</label>
+                        <div class="d-flex flex-wrap gap-2 mb-3" id="set-categories">
+                            <!-- Filled by JS -->
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <span class="fw-bold" style="font-size: 0.9rem;">Auto Like</span>
+                                <br><small class="text-muted">Like postingan setelah komentar</small>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="set-auto-like" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="fw-bold" style="font-size: 0.9rem;">Auto Follow</span>
+                                <br><small class="text-muted">Follow user setelah komentar</small>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="set-auto-follow">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <div class="card-custom">
+                        <h6 class="section-title">🔑 API Configuration</h6>
+                        <p class="section-subtitle">Konfigurasi API key untuk fitur AI</p>
+
+                        <label class="form-label small text-muted">OpenAI API Key (untuk mode AI)</label>
+                        <div class="row g-2">
+                            <div class="col-md-10">
+                                <input type="password" class="form-control input-custom" id="set-openai-key" placeholder="sk-...">
+                            </div>
+                            <div class="col-md-2">
+                                <button class="btn btn-outline-custom w-100" onclick="testApiKey()">
+                                    <i class="fas fa-check me-1"></i> Test
+                                </button>
+                            </div>
+                        </div>
+                        <small class="text-muted mt-1 d-block">Dapatkan API key di <a href="https://platform.openai.com" target="_blank" style="color: var(--accent-purple);">platform.openai.com</a></small>
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <button class="btn btn-glow btn-start" onclick="saveSettings()">
+                        <i class="fas fa-save me-1"></i> Simpan Settings
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Footer -->
+    <footer class="text-center py-4 mt-4" style="border-top: 1px solid var(--border);">
+        <small class="text-muted">
+            🔥 GenZ Auto Comment Bot v1.0 | Made with 💜 | 
+            <span style="color: var(--accent-purple);">Use responsibly, don't spam!</span>
+        </small>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+    <script>
+        // =============================================
+        // STATE
+        // =============================================
+        const API_BASE = '';
+        let socket = null;
+        const tags = {
+            ig: { hashtag: [], user: [] },
+            tt: { hashtag: [], user: [] }
+        };
+
+        const CATEGORIES = [
+            { id: 'pujian_umum', label: '🌟 Pujian Umum' },
+            { id: 'pujian_outfit', label: '👗 Outfit' },
+            { id: 'pujian_makanan', label: '🍔 Makanan' },
+            { id: 'pujian_travel', label: '✈️ Travel' },
+            { id: 'supportive', label: '💪 Supportive' },
+            { id: 'lucu', label: '😂 Lucu' },
+            { id: 'engagement_boost', label: '📈 Engagement' },
+        ];
+
+        // =============================================
+        // INIT
+        // =============================================
+        document.addEventListener('DOMContentLoaded', () => {
+            initSocket();
+            loadCategories();
+            loadQuickComments();
+            loadStats();
+            updateCountLabel();
+        });
+
+        function initSocket() {
+            try {
+                socket = io();
+                socket.on('stats_update', (data) => updateDashboard(data));
+                socket.on('log_update', (data) => addLogEntry(data.platform, data.log));
+            } catch(e) {
+                console.log('WebSocket not available, using polling');
+                setInterval(loadStats, 5000);
+            }
+        }
+
+        // =============================================
+        // NAVIGATION
+        // =============================================
+        function showSection(section) {
+            document.querySelectorAll('.section-page').forEach(el => el.style.display = 'none');
+            document.getElementById(`section-${section}`).style.display = 'block';
+
+            document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+            event.target.closest('.nav-link')?.classList.add('active');
+        }
+
+        // =============================================
+        // DASHBOARD
+        // =============================================
+        function loadStats() {
+            fetch(`${API_BASE}/api/status`)
+                .then(r => r.json())
+                .then(data => updateDashboard(data))
+                .catch(() => {});
+        }
+
+        function updateDashboard(data) {
+            if (!data) return;
+
+            document.getElementById('stat-total').textContent = data.total_all_time || 0;
+            document.getElementById('stat-ig-today').textContent = data.instagram?.comments_today || 0;
+            document.getElementById('stat-tt-today').textContent = data.tiktok?.comments_today || 0;
+
+            // IG Status
+            document.getElementById('ig-count-today').textContent = data.instagram?.comments_today || 0;
+            document.getElementById('ig-count-total').textContent = data.instagram?.total_comments || 0;
+
+            const igStatus = data.instagram?.is_running ? 'running' : (data.instagram?.is_logged_in ? 'stopped' : 'offline');
+            const igStatusLabel = igStatus === 'running' ? 'Running' : (igStatus === 'stopped' ? 'Stopped' : 'Offline');
+            document.getElementById('ig-status').innerHTML = `
+                <span class="status-badge ${igStatus}">
+                    <span class="status-dot ${igStatus}"></span>
+                    ${igStatusLabel}
+                </span>
+            `;
+
+            if (data.instagram?.username) {
+                document.getElementById('ig-username').textContent = `@${data.instagram.username}`;
+            }
+
+            // TT Status
+            document.getElementById('tt-count-today').textContent = data.tiktok?.comments_today || 0;
+            document.getElementById('tt-count-total').textContent = data.tiktok?.total_comments || 0;
+
+            const ttStatus = data.tiktok?.is_running ? 'running' : (data.tiktok?.is_logged_in ? 'stopped' : 'offline');
+            const ttStatusLabel = ttStatus === 'running' ? 'Running' : (ttStatus === 'stopped' ? 'Stopped' : 'Offline');
+            document.getElementById('tt-status').innerHTML = `
+                <span class="status-badge ${ttStatus}">
+                    <span class="status-dot ${ttStatus}"></span>
+                    ${ttStatusLabel}
+                </span>
+            `;
+
+            if (data.tiktok?.username) {
+                document.getElementById('tt-username').textContent = `@${data.tiktok.username}`;
+            }
+
+            // Button states
+            if (data.instagram?.is_running) {
+                document.getElementById('ig-start-btn').style.display = 'none';
+                document.getElementById('ig-stop-btn').style.display = 'inline-block';
+                document.getElementById('ig-auto-status').textContent = '🟢 Bot sedang aktif...';
+            } else {
+                document.getElementById('ig-start-btn').style.display = 'inline-block';
+                document.getElementById('ig-stop-btn').style.display = 'none';
+                document.getElementById('ig-auto-status').textContent = 'Belum aktif';
+            }
+
+            if (data.tiktok?.is_running) {
+                document.getElementById('tt-start-btn').style.display = 'none';
+                document.getElementById('tt-stop-btn').style.display = 'inline-block';
+                document.getElementById('tt-auto-status').textContent = '🟢 Bot sedang aktif...';
+            } else {
+                document.getElementById('tt-start-btn').style.display = 'inline-block';
+                document.getElementById('tt-stop-btn').style.display = 'none';
+                document.getElementById('tt-auto-status').textContent = 'Belum aktif';
+            }
+        }
+
+        function loadQuickComments() {
+            fetch(`${API_BASE}/api/generate-bulk`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ count: 5 })
+            })
+            .then(r => r.json())
+            .then(data => {
+                const container = document.getElementById('quick-comments');
+                if (data.comments) {
+                    container.innerHTML = data.comments.map(c =>
+                        `<div class="comment-preview">${c}</div>`
+                    ).join('');
+                }
+            })
+            .catch(() => {
+                document.getElementById('quick-comments').innerHTML = `
+                    <div class="comment-preview">Gila sih ini keren banget!! 🔥🔥</div>
+                    <div class="comment-preview">Slay abis! Ga ada obat 💅</div>
+                    <div class="comment-preview">No cap, ini bagus bgt sih 🫶</div>
+                    <div class="comment-preview">Vibes nya dapet bgt, aesthetic parah! ✨</div>
+                    <div class="comment-preview">Keep going bestie! Selalu support 🫶💪</div>
+                `;
+            });
+
+            // Load template count
+            fetch(`${API_BASE}/api/categories`)
+                .then(r => r.json())
+                .then(data => {
+                    document.getElementById('stat-templates').textContent = data.total_templates || 85;
+                })
+                .catch(() => {
+                    document.getElementById('stat-templates').textContent = '85';
+                });
+        }
+
+        // =============================================
+        // TAGS INPUT
+        // =============================================
+        function addTag(event, platform, type) {
+            if (event.key !== 'Enter') return;
+            event.preventDefault();
+
+            const input = event.target;
+            let value = input.value.trim();
+            if (!value) return;
+
+            // Remove # or @ prefix if added
+            value = value.replace(/^[#@]/, '');
+
+            if (tags[platform][type].includes(value)) {
+                showToast('Tag sudah ada!', 'warning');
+                return;
+            }
+
+            tags[platform][type].push(value);
+            input.value = '';
+            renderTags(platform, type);
+        }
+
+        function removeTag(platform, type, value) {
+            tags[platform][type] = tags[platform][type].filter(t => t !== value);
+            renderTags(platform, type);
+        }
+
+        function renderTags(platform, type) {
+            const containerId = `${platform}-${type === 'hashtag' ? 'hashtags' : 'users'}-container`;
+            const container = document.getElementById(containerId);
+            const input = container.querySelector('input');
+
+            // Remove existing tags
+            container.querySelectorAll('.tag').forEach(t => t.remove());
+
+            // Add tags before input
+            tags[platform][type].forEach(tag => {
+                const tagEl = document.createElement('span');
+                tagEl.className = `tag ${type}`;
+                tagEl.innerHTML = `
+                    ${type === 'hashtag' ? '#' : '@'}${tag}
+                    <i class="fas fa-times remove-tag" onclick="removeTag('${platform}', '${type}', '${tag}')"></i>
+                `;
+                container.insertBefore(tagEl, input);
+            });
+        }
+
+        // =============================================
+        // INSTAGRAM ACTIONS
+        // =============================================
+        function loginInstagram() {
+            const username = document.getElementById('ig-input-username').value;
+            const password = document.getElementById('ig-input-password').value;
+
+            if (!username || !password) {
+                showToast('Isi username dan password dulu bestie! 🔑', 'warning');
+                return;
+            }
+
+            showToast('Mencoba login Instagram...', 'info');
+
+            fetch(`${API_BASE}/api/instagram/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            })
+            .then(r => r.json())
+            .then(data => {
+                showToast(data.message, data.success ? 'success' : 'error');
+                if (data.success) loadStats();
+            })
+            .catch(e => showToast('Error koneksi ke server', 'error'));
+        }
+
+        function startIG() {
+            const hashtags = tags.ig.hashtag;
+            const users = tags.ig.user;
+
+            if (!hashtags.length && !users.length) {
+                showToast('Tambahkan minimal 1 hashtag atau user target! 🎯', 'warning');
+                return;
+            }
+
+            fetch(`${API_BASE}/api/instagram/start`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ hashtags, users })
+            })
+            .then(r => r.json())
+            .then(data => {
+                showToast(data.message, data.success ? 'success' : 'error');
+                loadStats();
+            });
+        }
+
+        function stopIG() {
+            fetch(`${API_BASE}/api/instagram/stop`, { method: 'POST' })
+            .then(r => r.json())
+            .then(data => {
+                showToast(data.message, 'info');
+                loadStats();
+            });
+        }
+
+        // =============================================
+        // TIKTOK ACTIONS
+        // =============================================
+        function loginTikTok() {
+            const sessionId = document.getElementById('tt-input-session').value;
+
+            if (!sessionId) {
+                showToast('Isi session ID dulu bestie! 🔑', 'warning');
+                return;
+            }
+
+            fetch(`${API_BASE}/api/tiktok/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ session_id: sessionId })
+            })
+            .then(r => r.json())
+            .then(data => {
+                showToast(data.message, data.success ? 'success' : 'error');
+                if (data.success) loadStats();
+            });
+        }
+
+        function startTT() {
+            const hashtags = tags.tt.hashtag;
+            const users = tags.tt.user;
+
+            if (!hashtags.length && !users.length) {
+                showToast('Tambahkan minimal 1 hashtag atau user target! 🎯', 'warning');
+                return;
+            }
+
+            fetch(`${API_BASE}/api/tiktok/start`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ hashtags, users })
+            })
+            .then(r => r.json())
+            .then(data => {
+                showToast(data.message, data.success ? 'success' : 'error');
+                loadStats();
+            });
+        }
+
+        function stopTT() {
+            fetch(`${API_BASE}/api/tiktok/stop`, { method: 'POST' })
+            .then(r => r.json())
+            .then(data => {
+                showToast(data.message, 'info');
+                loadStats();
+            });
+        }
+
+        // =============================================
+        // COMMENT GENERATOR
+        // =============================================
+        function loadCategories() {
+            const genContainer = document.getElementById('gen-categories');
+            const setContainer = document.getElementById('set-categories');
+
+            CATEGORIES.forEach(cat => {
+                const badge1 = `<span class="category-badge" data-cat="${cat.id}" onclick="toggleCategory(this)">${cat.label}</span>`;
+                const badge2 = `<span class="category-badge selected" data-cat="${cat.id}" onclick="toggleSettingsCategory(this)">${cat.label}</span>`;
+
+                genContainer.innerHTML += badge1;
+                setContainer.innerHTML += badge2;
+            });
+        }
+
+        let selectedGenCategory = null;
+
+        function toggleCategory(el) {
+            document.querySelectorAll('#gen-categories .category-badge').forEach(b => b.classList.remove('selected'));
+            if (selectedGenCategory === el.dataset.cat) {
+                selectedGenCategory = null;
+            } else {
+                el.classList.add('selected');
+                selectedGenCategory = el.dataset.cat;
+            }
+        }
+
+        function toggleSettingsCategory(el) {
+            el.classList.toggle('selected');
+        }
+
+        function updateCountLabel() {
+            const slider = document.getElementById('gen-count');
+            const label = document.getElementById('gen-count-label');
+            slider.addEventListener('input', () => {
+                label.textContent = slider.value;
+            });
+        }
+
+        function generateComments() {
+            const mode = document.getElementById('gen-mode').value;
+            const postType = document.getElementById('gen-post-type').value;
+            const caption = document.getElementById('gen-caption').value;
+            const count = parseInt(document.getElementById('gen-count').value);
+
+            const container = document.getElementById('gen-results');
+            container.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin fa-2x" style="color: var(--accent-purple);"></i><p class="text-muted mt-2">Generating komentar...</p></div>';
+
+            fetch(`${API_BASE}/api/generate-bulk`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    mode,
+                    category: selectedGenCategory,
+                    post_type: postType,
+                    caption,
+                    count
+                })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.comments && data.comments.length > 0) {
+                    container.innerHTML = data.comments.map((c, i) =>
+                        `<div class="comment-preview">
+                            <span style="color: var(--text-muted); font-size: 0.75rem;">#${i+1}</span>
+                            <span class="ms-2">${c}</span>
+                            <button class="btn btn-sm float-end" onclick="copyComment(this, '${c.replace(/'/g, "\\'")}')" style="color: var(--text-muted); font-size: 0.75rem;">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>`
+                    ).join('');
+                }
+            })
+            .catch(() => {
+                container.innerHTML = '<p class="text-center text-danger">Error generating komentar. Pastikan server berjalan!</p>';
+            });
+        }
+
+        function copyComment(btn, text) {
+            navigator.clipboard.writeText(text);
+            btn.innerHTML = '<i class="fas fa-check" style="color: var(--accent-green);"></i>';
+            setTimeout(() => {
+                btn.innerHTML = '<i class="fas fa-copy"></i>';
+            }, 2000);
+        }
+
+        // =============================================
+        // SETTINGS
+        // =============================================
+        function saveSettings() {
+            const activeCategories = [];
+            document.querySelectorAll('#set-categories .category-badge.selected').forEach(el => {
+                activeCategories.push(el.dataset.cat);
+            });
+
+            const settings = {
+                interval_min: parseInt(document.getElementById('set-interval-min').value),
+                interval_max: parseInt(document.getElementById('set-interval-max').value),
+                max_per_day: parseInt(document.getElementById('set-max-per-day').value),
+                comment_mode: document.getElementById('set-comment-mode').value,
+                categories: activeCategories,
+                auto_like: document.getElementById('set-auto-like').checked,
+                auto_follow: document.getElementById('set-auto-follow').checked,
+            };
+
+            fetch(`${API_BASE}/api/settings`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(settings)
+            })
+            .then(r => r.json())
+            .then(data => {
+                showToast('Settings berhasil disimpan! ✅', 'success');
+            })
+            .catch(() => {
+                showToast('Gagal menyimpan settings', 'error');
+            });
+        }
+
+        function testApiKey() {
+            showToast('Testing API key... (fitur ini memerlukan server)', 'info');
+        }
+
+        // =============================================
+        // LOG
+        // =============================================
+        function addLogEntry(platform, log) {
+            const logId = platform === 'instagram' ? 'ig-log' : 'tt-log';
+            const container = document.getElementById(logId);
+
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${log.type}`;
+            entry.innerHTML = `
+                <span class="log-time">${log.time}</span>
+                <span class="log-message">${log.message}</span>
+            `;
+            container.insertBefore(entry, container.firstChild);
+
+            // Keep max 50 entries in DOM
+            while (container.children.length > 50) {
+                container.removeChild(container.lastChild);
+            }
+        }
+
+        // =============================================
+        // TOAST NOTIFICATIONS
+        // =============================================
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const icons = {
+                success: '<i class="fas fa-check-circle" style="color: var(--accent-green); font-size: 1.2rem;"></i>',
+                error: '<i class="fas fa-times-circle" style="color: var(--accent-red); font-size: 1.2rem;"></i>',
+                warning: '<i class="fas fa-exclamation-circle" style="color: var(--accent-orange); font-size: 1.2rem;"></i>',
+                info: '<i class="fas fa-info-circle" style="color: var(--accent-blue); font-size: 1.2rem;"></i>',
+            };
+
+            const toast = document.createElement('div');
+            toast.className = 'toast-custom';
+            toast.innerHTML = `
+                ${icons[type] || icons.info}
+                <span style="font-size: 0.85rem;">${message}</span>
+            `;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100%)';
+                toast.style.transition = 'all 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🤖 AutoCommentAI - Smart Social Media Commenter</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/workflow.css">
+    <link rel="stylesheet" href="css/animations.css">
+</head>
+<body>
+    <!-- LOADING SCREEN -->
+    <div id="loadingScreen" class="loading-screen">
+        <div class="loader-container">
+            <div class="loader-icon">🤖</div>
+            <div class="loader-text">AutoComment<span class="accent">AI</span></div>
+            <div class="loader-bar"><div class="loader-progress"></div></div>
+            <div class="loader-status">Memuat sistem AI...</div>
+        </div>
+    </div>
+
+    <!-- MAIN APP -->
+    <div id="app" class="app hidden">
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <span class="logo-icon">🤖</span>
+                    <span class="logo-text">AutoComment<span class="accent">AI</span></span>
+                </div>
+                <div class="version-badge">v2.0</div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active" data-page="dashboard">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#" class="nav-item" data-page="workflow">
+                    <i class="fas fa-project-diagram"></i>
+                    <span>Workflow</span>
+                </a>
+                <a href="#" class="nav-item" data-page="accounts">
+                    <i class="fas fa-users"></i>
+                    <span>Akun</span>
+                </a>
+                <a href="#" class="nav-item" data-page="history">
+                    <i class="fas fa-history"></i>
+                    <span>Riwayat</span>
+                </a>
+                <a href="#" class="nav-item" data-page="settings">
+                    <i class="fas fa-cog"></i>
+                    <span>Pengaturan</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="ai-status">
+                    <div class="status-dot" id="aiStatusDot"></div>
+                    <span id="aiStatusText">AI Offline</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT -->
+        <main class="main-content">
+            <!-- HEADER -->
+            <header class="top-header">
+                <div class="header-left">
+                    <button class="menu-toggle" id="menuToggle">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h1 id="pageTitle">Dashboard</h1>
+                </div>
+                <div class="header-right">
+                    <div class="api-key-indicator" id="apiKeyIndicator" title="Klik untuk setup API Key">
+                        <i class="fas fa-key"></i>
+                        <span>API Key</span>
+                    </div>
+                    <div class="theme-toggle" id="themeToggle">
+                        <i class="fas fa-moon"></i>
+                    </div>
+                </div>
+            </header>
+
+            <!-- PAGE: DASHBOARD -->
+            <section id="page-dashboard" class="page active">
+                <div class="dashboard-grid">
+                    <!-- Stats Cards -->
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #E1306C, #F77737);">
+                            <i class="fab fa-instagram"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="igCommentCount">0</h3>
+                            <p>Komentar IG</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #000000, #25F4EE);">
+                            <i class="fab fa-tiktok"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="ttCommentCount">0</h3>
+                            <p>Komentar TikTok</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #7C3AED, #EC4899);">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="aiGeneratedCount">0</h3>
+                            <p>AI Generated</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #10B981, #34D399);">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="successRate">0%</h3>
+                            <p>Success Rate</p>
+                        </div>
+                    </div>
+
+                    <!-- Quick Action -->
+                    <div class="quick-action-card">
+                        <h2>⚡ Quick Auto Comment</h2>
+                        <p>Mulai auto comment dengan cepat</p>
+                        
+                        <div class="quick-form">
+                            <div class="form-group">
+                                <label>Platform</label>
+                                <div class="platform-selector">
+                                    <button class="platform-btn active" data-platform="instagram">
+                                        <i class="fab fa-instagram"></i> Instagram
+                                    </button>
+                                    <button class="platform-btn" data-platform="tiktok">
+                                        <i class="fab fa-tiktok"></i> TikTok
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>URL Post / Username Target</label>
+                                <input type="text" id="targetInput" placeholder="Masukkan URL post atau @username" class="input-field">
+                            </div>
+
+                            <div class="form-group">
+                                <label>Jumlah Post yang Dikomentari</label>
+                                <div class="post-count-selector">
+                                    <button class="count-btn" data-count="1">1</button>
+                                    <button class="count-btn" data-count="3">3</button>
+                                    <button class="count-btn active" data-count="5">5</button>
+                                    <button class="count-btn" data-count="10">10</button>
+                                    <input type="number" id="customCount" placeholder="Custom" min="1" max="50" class="count-input">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Gaya Komentar</label>
+                                <select id="commentStyle" class="input-field">
+                                    <option value="genz">🔥 Gen Z Gaul</option>
+                                    <option value="friendly">😊 Friendly & Sopan</option>
+                                    <option value="hype">🚀 Hype & Excited</option>
+                                    <option value="aesthetic">✨ Aesthetic</option>
+                                    <option value="supportive">💪 Supportive</option>
+                                    <option value="custom">✏️ Custom Prompt</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group hidden" id="customPromptGroup">
+                                <label>Custom Prompt</label>
+                                <textarea id="customPrompt" placeholder="Contoh: Komentari dengan gaya anak Jaksel yang suka nyampur Bahasa Inggris..." class="input-field" rows="3"></textarea>
+                            </div>
+
+                            <button id="startQuickComment" class="btn-primary btn-glow">
+                                <i class="fas fa-play"></i> Mulai Auto Comment
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Activity Log -->
+                    <div class="activity-card">
+                        <h2>📋 Activity Log</h2>
+                        <div class="activity-log" id="activityLog">
+                            <div class="activity-empty">
+                                <i class="fas fa-inbox"></i>
+                                <p>Belum ada aktivitas</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PAGE: WORKFLOW (n8n style) -->
+            <section id="page-workflow" class="page">
+                <div class="workflow-container">
+                    <div class="workflow-header">
+                        <h2><i class="fas fa-project-diagram"></i> Visual Workflow</h2>
+                        <p>Alur otomatis: Login → Scan Post → AI Baca Konteks → Auto Comment</p>
+                    </div>
+
+                    <div class="workflow-canvas" id="workflowCanvas">
+                        <!-- Node 1: Login -->
+                        <div class="workflow-node node-trigger" id="node-login" data-step="1">
+                            <div class="node-header">
+                                <div class="node-icon"><i class="fas fa-sign-in-alt"></i></div>
+                                <span>LOGIN</span>
+                            </div>
+                            <div class="node-body">
+                                <div class="node-status" id="nodeLoginStatus">Menunggu...</div>
+                                <small>Instagram / TikTok</small>
+                            </div>
+                            <div class="node-port node-port-out"></div>
+                        </div>
+
+                        <div class="workflow-connector" id="conn-1-2">
+                            <div class="connector-line"></div>
+                            <div class="connector-dot"></div>
+                        </div>
+
+                        <!-- Node 2: Scan Posts -->
+                        <div class="workflow-node node-action" id="node-scan" data-step="2">
+                            <div class="node-header">
+                                <div class="node-icon"><i class="fas fa-search"></i></div>
+                                <span>SCAN POST</span>
+                            </div>
+                            <div class="node-body">
+                                <div class="node-status" id="nodeScanStatus">Menunggu...</div>
+                                <small>Ambil post terbaru</small>
+                            </div>
+                            <div class="node-port node-port-in"></div>
+                            <div class="node-port node-port-out"></div>
+                        </div>
+
+                        <div class="workflow-connector" id="conn-2-3">
+                            <div class="connector-line"></div>
+                            <div class="connector-dot"></div>
+                        </div>
+
+                        <!-- Node 3: AI Analysis -->
+                        <div class="workflow-node node-ai" id="node-ai" data-step="3">
+                            <div class="node-header">
+                                <div class="node-icon"><i class="fas fa-brain"></i></div>
+                                <span>AI ANALYSIS</span>
+                            </div>
+                            <div class="node-body">
+                                <div class="node-status" id="nodeAiStatus">Menunggu...</div>
+                                <small>Baca gambar & caption</small>
+                            </div>
+                            <div class="node-port node-port-in"></div>
+                            <div class="node-port node-port-out"></div>
+                        </div>
+
+                        <div class="workflow-connector" id="conn-3-4">
+                            <div class="connector-line"></div>
+                            <div class="connector-dot"></div>
+                        </div>
+
+                        <!-- Node 4: Generate Comment -->
+                        <div class="workflow-node node-ai" id="node-generate" data-step="4">
+                            <div class="node-header">
+                                <div class="node-icon"><i class="fas fa-magic"></i></div>
+                                <span>GENERATE</span>
+                            </div>
+                            <div class="node-body">
+                                <div class="node-status" id="nodeGenerateStatus">Menunggu...</div>
+                                <small>Buat komentar Gen Z</small>
+                            </div>
+                            <div class="node-port node-port-in"></div>
+                            <div class="node-port node-port-out"></div>
+                        </div>
+
+                        <div class="workflow-connector" id="conn-4-5">
+                            <div class="connector-line"></div>
+                            <div class="connector-dot"></div>
+                        </div>
+
+                        <!-- Node 5: Post Comment -->
+                        <div class="workflow-node node-output" id="node-post" data-step="5">
+                            <div class="node-header">
+                                <div class="node-icon"><i class="fas fa-paper-plane"></i></div>
+                                <span>POST COMMENT</span>
+                            </div>
+                            <div class="node-body">
+                                <div class="node-status" id="nodePostStatus">Menunggu...</div>
+                                <small>Kirim komentar</small>
+                            </div>
+                            <div class="node-port node-port-in"></div>
+                        </div>
+                    </div>
+
+                    <!-- Workflow Control -->
+                    <div class="workflow-controls">
+                        <button id="runWorkflow" class="btn-primary btn-glow">
+                            <i class="fas fa-play"></i> Jalankan Workflow
+                        </button>
+                        <button id="stopWorkflow" class="btn-danger hidden">
+                            <i class="fas fa-stop"></i> Stop
+                        </button>
+                        <button id="resetWorkflow" class="btn-secondary">
+                            <i class="fas fa-redo"></i> Reset
+                        </button>
+                    </div>
+
+                    <!-- Workflow Log -->
+                    <div class="workflow-log">
+                        <h3><i class="fas fa-terminal"></i> Workflow Log</h3>
+                        <div class="log-container" id="workflowLog">
+                            <div class="log-entry log-info">
+                                <span class="log-time">--:--:--</span>
+                                <span class="log-msg">Workflow siap dijalankan. Pastikan sudah login dan set API key.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PAGE: ACCOUNTS -->
+            <section id="page-accounts" class="page">
+                <div class="accounts-container">
+                    <h2><i class="fas fa-users"></i> Kelola Akun</h2>
+                    <p class="page-desc">Login ke akun Instagram dan TikTok kamu untuk mulai auto comment</p>
+
+                    <div class="accounts-grid">
+                        <!-- Instagram Login -->
+                        <div class="account-card">
+                            <div class="account-header ig-gradient">
+                                <i class="fab fa-instagram"></i>
+                                <h3>Instagram</h3>
+                            </div>
+                            <div class="account-body">
+                                <div class="account-status" id="igStatus">
+                                    <div class="status-badge offline">
+                                        <i class="fas fa-circle"></i> Belum Login
+                                    </div>
+                                </div>
+                                <div class="login-form" id="igLoginForm">
+                                    <div class="form-group">
+                                        <label>Username</label>
+                                        <input type="text" id="igUsername" placeholder="username_instagram" class="input-field">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Password</label>
+                                        <input type="password" id="igPassword" placeholder="••••••••" class="input-field">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Session ID (Opsional - Lebih Aman)</label>
+                                        <input type="text" id="igSessionId" placeholder="Paste session ID dari browser" class="input-field">
+                                        <small class="help-text">💡 Gunakan Session ID agar lebih aman tanpa password</small>
+                                    </div>
+                                    <button class="btn-primary" id="igLoginBtn">
+                                        <i class="fab fa-instagram"></i> Login Instagram
+                                    </button>
+                                </div>
+                                <div class="account-info hidden" id="igAccountInfo">
+                                    <div class="user-avatar" id="igAvatar">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                    <p class="username" id="igLoggedUser">@username</p>
+                                    <button class="btn-danger btn-sm" id="igLogoutBtn">
+                                        <i class="fas fa-sign-out-alt"></i> Logout
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TikTok Login -->
+                        <div class="account-card">
+                            <div class="account-header tt-gradient">
+                                <i class="fab fa-tiktok"></i>
+                                <h3>TikTok</h3>
+                            </div>
+                            <div class="account-body">
+                                <div class="account-status" id="ttStatus">
+                                    <div class="status-badge offline">
+                                        <i class="fas fa-circle"></i> Belum Login
+                                    </div>
+                                </div>
+                                <div class="login-form" id="ttLoginForm">
+                                    <div class="form-group">
+                                        <label>Username</label>
+                                        <input type="text" id="ttUsername" placeholder="username_tiktok" class="input-field">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Password</label>
+                                        <input type="password" id="ttPassword" placeholder="••••••••" class="input-field">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Session ID (Opsional - Lebih Aman)</label>
+                                        <input type="text" id="ttSessionId" placeholder="Paste session ID dari browser" class="input-field">
+                                        <small class="help-text">💡 Gunakan Session ID agar lebih aman tanpa password</small>
+                                    </div>
+                                    <button class="btn-primary" id="ttLoginBtn">
+                                        <i class="fab fa-tiktok"></i> Login TikTok
+                                    </button>
+                                </div>
+                                <div class="account-info hidden" id="ttAccountInfo">
+                                    <div class="user-avatar" id="ttAvatar">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                    <p class="username" id="ttLoggedUser">@username</p>
+                                    <button class="btn-danger btn-sm" id="ttLogoutBtn">
+                                        <i class="fas fa-sign-out-alt"></i> Logout
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Security Notice -->
+                    <div class="security-notice">
+                        <i class="fas fa-shield-alt"></i>
+                        <div>
+                            <h4>🔒 Keamanan Data</h4>
+                            <p>Semua credential disimpan HANYA di browser kamu (localStorage). Tidak ada data yang dikirim ke server manapun. Untuk keamanan maksimal, gunakan Session ID instead of password.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PAGE: HISTORY -->
+            <section id="page-history" class="page">
+                <div class="history-container">
+                    <div class="history-header">
+                        <h2><i class="fas fa-history"></i> Riwayat Komentar</h2>
+                        <div class="history-actions">
+                            <button class="btn-secondary btn-sm" id="exportHistory">
+                                <i class="fas fa-download"></i> Export CSV
+                            </button>
+                            <button class="btn-danger btn-sm" id="clearHistory">
+                                <i class="fas fa-trash"></i> Hapus Semua
+                            </button>
+                        </div>
+                    </div>
+                    <div class="history-table-wrapper">
+                        <table class="history-table">
+                            <thead>
+                                <tr>
+                                    <th>Waktu</th>
+                                    <th>Platform</th>
+                                    <th>Target</th>
+                                    <th>Komentar</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyBody">
+                                <tr class="empty-row">
+                                    <td colspan="5">
+                                        <i class="fas fa-inbox"></i>
+                                        <p>Belum ada riwayat</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PAGE: SETTINGS -->
+            <section id="page-settings" class="page">
+                <div class="settings-container">
+                    <h2><i class="fas fa-cog"></i> Pengaturan</h2>
+
+                    <div class="settings-grid">
+                        <!-- API Key Setup -->
+                        <div class="settings-card">
+                            <h3><i class="fas fa-key"></i> API Key Setup</h3>
+                            <p>Masukkan Gemini API Key untuk fitur AI comment generator</p>
+                            <div class="form-group">
+                                <label>Google Gemini API Key</label>
+                                <div class="input-with-action">
+                                    <input type="password" id="geminiApiKey" placeholder="AIza..." class="input-field">
+                                    <button class="btn-icon" id="toggleApiKeyVisibility">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                                <small class="help-text">
+                                    💡 Dapatkan gratis di <a href="https://aistudio.google.com/apikey" target="_blank">Google AI Studio</a>
+                                </small>
+                            </div>
+                            <button class="btn-primary" id="saveApiKey">
+                                <i class="fas fa-save"></i> Simpan API Key
+                            </button>
+                        </div>
+
+                        <!-- Comment Settings -->
+                        <div class="settings-card">
+                            <h3><i class="fas fa-comment-dots"></i> Pengaturan Komentar</h3>
+                            <div class="form-group">
+                                <label>Delay antar komentar (detik)</label>
+                                <input type="number" id="commentDelay" value="30" min="10" max="300" class="input-field">
+                                <small class="help-text">⚠️ Minimal 10 detik untuk menghindari ban</small>
+                            </div>
+                            <div class="form-group">
+                                <label>Maksimal komentar per hari</label>
+                                <input type="number" id="maxDailyComments" value="20" min="1" max="100" class="input-field">
+                            </div>
+                            <div class="form-group">
+                                <label>Bahasa komentar</label>
+                                <select id="commentLang" class="input-field">
+                                    <option value="id">🇮🇩 Bahasa Indonesia</option>
+                                    <option value="en">🇺🇸 English</option>
+                                    <option value="mixed">🌏 Campur (Indo + English)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="useEmoji" checked>
+                                    <span>Gunakan Emoji 🔥</span>
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="randomDelay" checked>
+                                    <span>Random delay (anti-bot detection)</span>
+                                </label>
+                            </div>
+                            <button class="btn-primary" id="saveCommentSettings">
+                                <i class="fas fa-save"></i> Simpan Pengaturan
+                            </button>
+                        </div>
+
+                        <!-- AI Persona -->
+                        <div class="settings-card full-width">
+                            <h3><i class="fas fa-robot"></i> AI Persona</h3>
+                            <p>Sesuaikan kepribadian AI saat generate komentar</p>
+                            <div class="form-group">
+                                <label>System Prompt</label>
+                                <textarea id="aiPersona" class="input-field" rows="5">Kamu adalah user Instagram/TikTok Gen Z Indonesia yang gaul. Komentari postingan dengan bahasa yang natural, friendly, dan kekinian. Gunakan bahasa campuran Indo-English (Jaksel style). Tambahkan emoji yang relevan. Jangan terlihat seperti bot. Buat komentar singkat, padat, dan engaging.</textarea>
+                            </div>
+                            <button class="btn-primary" id="savePersona">
+                                <i class="fas fa-save"></i> Simpan Persona
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- MODAL: AI Preview -->
+    <div class="modal-overlay hidden" id="aiPreviewModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>🧠 AI Comment Preview</h3>
+                <button class="modal-close" id="closePreviewModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="preview-post">
+                    <div class="preview-image" id="previewImage">
+                        <i class="fas fa-image"></i>
+                    </div>
+                    <div class="preview-caption" id="previewCaption">Caption akan muncul di sini...</div>
+                </div>
+                <div class="preview-divider">
+                    <span>🤖 AI Generated Comment</span>
+                </div>
+                <div class="preview-comment" id="previewComment">
+                    <div class="typing-indicator">
+                        <span></span><span></span><span></span>
+                    </div>
+                </div>
+                <div class="preview-actions">
+                    <button class="btn-secondary" id="regenerateComment">
+                        <i class="fas fa-redo"></i> Generate Ulang
+                    </button>
+                    <button class="btn-primary" id="approveComment">
+                        <i class="fas fa-check"></i> Kirim Komentar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: API Key Setup (First Time) -->
+    <div class="modal-overlay hidden" id="apiKeyModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>🔑 Setup API Key</h3>
+                <button class="modal-close" id="closeApiKeyModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="setup-guide">
+                    <p>Untuk menggunakan fitur AI, kamu butuh <strong>Google Gemini API Key</strong> (GRATIS!):</p>
+                    <ol>
+                        <li>Buka <a href="https://aistudio.google.com/apikey" target="_blank">Google AI Studio</a></li>
+                        <li>Login dengan akun Google</li>
+                        <li>Klik "Create API Key"</li>
+                        <li>Copy dan paste API Key di bawah</li>
+                    </ol>
+                    <div class="form-group">
+                        <input type="text" id="firstTimeApiKey" placeholder="Paste Gemini API Key di sini..." class="input-field input-lg">
+                    </div>
+                    <button class="btn-primary btn-glow btn-full" id="saveFirstTimeApiKey">
+                        <i class="fas fa-rocket"></i> Aktifkan AI
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATIONS -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- SCRIPTS -->
+    <script src="js/config.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/ai-engine.js"></script>
+    <script src="js/social-api.js"></script>
+    <script src="js/workflow-engine.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

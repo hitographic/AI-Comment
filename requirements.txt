@@ -1,0 +1,10 @@
+flask==3.0.0
+flask-cors==4.0.0
+flask-socketio==5.3.6
+instagrapi==2.0.0
+TikTokApi==6.3.5
+playwright==1.40.0
+openai==1.6.1
+python-dotenv==1.0.0
+apscheduler==3.10.4
+requests==2.31.0
