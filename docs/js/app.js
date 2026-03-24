@@ -374,7 +374,11 @@ const App = {
             if (result.success) {
                 Storage.setApiKey(apiKey);
                 this.updateAIStatus();
-                this.showToast('API Key berhasil disimpan! AI siap digunakan 🤖', 'success');
+                if (result.warning) {
+                    this.showToast(result.warning, 'warning');
+                } else {
+                    this.showToast('API Key berhasil disimpan! AI siap digunakan 🤖', 'success');
+                }
             } else {
                 this.showToast(`API Key tidak valid: ${result.error}`, 'error');
             }
@@ -433,6 +437,7 @@ const App = {
 
     updateAIStatus() {
         const ready = AIEngine.checkReady();
+        const offline = AIEngine.offlineMode;
         const dot = document.getElementById('aiStatusDot');
         const text = document.getElementById('aiStatusText');
         const indicator = document.getElementById('apiKeyIndicator');
@@ -441,7 +446,13 @@ const App = {
             dot.classList.toggle('online', ready);
         }
         if (text) {
-            text.textContent = ready ? 'AI Online' : 'AI Offline';
+            if (ready && !offline) {
+                text.textContent = 'AI Online';
+            } else if (ready && offline) {
+                text.textContent = 'AI Offline (Template)';
+            } else {
+                text.textContent = 'AI Offline';
+            }
         }
         if (indicator) {
             indicator.classList.toggle('active', ready);
@@ -591,8 +602,12 @@ const App = {
                 Storage.setApiKey(apiKey);
                 this.updateAIStatus();
                 document.getElementById('apiKeyModal')?.classList.add('hidden');
-                this.showToast('🎉 AI berhasil diaktifkan! Selamat menggunakan AutoCommentAI', 'success');
-                this.confetti();
+                if (result.warning) {
+                    this.showToast('⚡ ' + result.warning, 'warning');
+                } else {
+                    this.showToast('🎉 AI berhasil diaktifkan! Selamat menggunakan AutoCommentAI', 'success');
+                    this.confetti();
+                }
             } else {
                 this.showToast(`API Key tidak valid: ${result.error}`, 'error');
             }

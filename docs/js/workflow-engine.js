@@ -316,16 +316,19 @@ const WorkflowEngine = {
         let comment;
         
         try {
-            if (AIEngine.checkReady()) {
+            if (Storage.hasApiKey()) {
                 comment = await AIEngine.smartComment(post, style, customPrompt);
                 this.log(`   🤖 AI Generated: "${comment}"`, 'ai');
             } else {
-                comment = AIEngine.generateFallbackComment();
-                this.log(`   📝 Template comment: "${comment}" (API key belum diset)`, 'warning');
+                // No API key - use smart fallback directly
+                var category = AIEngine._detectCategory(post.caption || '');
+                comment = AIEngine.generateFallbackComment(category);
+                this.log(`   📝 Template comment: "${comment}" (Tanpa API key - mode offline)`, 'warning');
             }
         } catch (error) {
             this.log(`   ⚠️ AI error, using fallback: ${error.message}`, 'warning');
-            comment = AIEngine.generateFallbackComment();
+            var category = AIEngine._detectCategory(post.caption || '');
+            comment = AIEngine.generateFallbackComment(category);
         }
 
         this.setNodeState('generate', 'completed', 'Generated ✓');

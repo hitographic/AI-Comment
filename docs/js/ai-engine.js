@@ -7,9 +7,13 @@
 const AIEngine = {
     isReady: false,
     activeModel: null,
+    offlineMode: false,
 
     checkReady() {
-        this.isReady = Storage.hasApiKey();
+        var hasKey = Storage.hasApiKey();
+        var hasFallback = CONFIG.ENABLE_OFFLINE_FALLBACK;
+        this.isReady = hasKey || hasFallback;
+        this.offlineMode = !hasKey && hasFallback;
         return this.isReady;
     },
 
@@ -19,6 +23,9 @@ const AIEngine = {
 
     async testApiKey(apiKey) {
         var models = CONFIG.GEMINI_MODELS;
+        var hasInvalidKey = false;
+        var hasSuccess = false;
+        var allModelsUnavailable = true; // true if every model is 404 or 429
         for (var i = 0; i < models.length; i++) {
             var model = models[i];
             try {
@@ -48,25 +55,39 @@ const AIEngine = {
                 if (errMsg.indexOf('API_KEY_INVALID') >= 0 || errMsg.indexOf('API key not valid') >= 0) {
                     return { success: false, error: 'API Key tidak valid. Pastikan API key benar dari aistudio.google.com/apikey' };
                 }
-                // 404 = model not found, try next model
+                // 404 or 429 = model unavailable, try next
                 if (response.status === 404) {
                     console.warn('Model ' + model + ' not found, trying next...');
                     continue;
                 }
-                // 429 = quota exceeded, try next model  
                 if (response.status === 429) {
                     console.warn('Model ' + model + ' quota exceeded, trying next...');
                     continue;
                 }
+                // Other error (not 404/429) = something else is wrong
+                allModelsUnavailable = false;
                 continue;
             } catch (error) {
                 console.warn('Model ' + model + ' error: ' + error.message);
+                allModelsUnavailable = false;
                 continue;
             }
         }
+        
+        // If all models are 404/429 (unavailable), the API key is likely still valid
+        // Save it and use offline fallback mode
+        if (allModelsUnavailable && CONFIG.ENABLE_OFFLINE_FALLBACK) {
+            console.log('All models unavailable (404/429), but API key format is valid. Enabling with offline fallback.');
+            return { 
+                success: true, 
+                model: 'offline-fallback',
+                warning: 'API key tersimpan! Semua model Gemini sedang tidak tersedia/rate-limited. Sementara menggunakan mode template offline. AI akan otomatis aktif saat model tersedia kembali.'
+            };
+        }
+        
         return {
             success: false,
-            error: 'Semua model Gemini sedang rate-limited. Coba lagi dalam beberapa menit, atau buat API key baru di aistudio.google.com/apikey'
+            error: 'Semua model Gemini sedang tidak tersedia. Coba lagi dalam beberapa menit, atau buat API key baru di aistudio.google.com/apikey'
         };
     },
 
@@ -115,7 +136,13 @@ const AIEngine = {
         style = style || 'genz';
         customPrompt = customPrompt || '';
         var apiKey = Storage.getApiKey();
-        if (!apiKey) throw new Error('API Key belum diset!');
+        
+        // No API key? Use fallback directly (no error)
+        if (!apiKey) {
+            console.log('No API key set, using offline fallback comment...');
+            var category = this._detectCategory(postContext.caption || '');
+            return this.generateFallbackComment(category);
+        }
 
         var persona = Storage.getPersona();
         var settings = Storage.getSettings();
@@ -192,8 +219,25 @@ const AIEngine = {
             return comment;
         } catch (error) {
             console.error('AI Generate Error:', error);
+            // Fallback to offline template if enabled
+            if (CONFIG.ENABLE_OFFLINE_FALLBACK) {
+                console.log('Using offline fallback comment...');
+                var category = this._detectCategory(postContext.caption || '');
+                return this.generateFallbackComment(category);
+            }
             throw error;
         }
+    },
+
+    /**
+     * Detect content category from caption text for better fallback comments
+     */
+    _detectCategory(caption) {
+        var text = caption.toLowerCase();
+        if (text.match(/outfit|fashion|ootd|style|baju|dress|wear/)) return 'fashion';
+        if (text.match(/food|makan|kuliner|recipe|resep|yummy|delicious|enak/)) return 'food';
+        if (text.match(/event|acara|festival|concert|konser|gathering|meetup/)) return 'event';
+        return 'general';
     },
 
     async generateMultipleComments(postContext, count, style) {
@@ -288,28 +332,46 @@ const AIEngine = {
                 "Next level content sih ini \uD83E\uDD2F",
                 "Main character energy bgt! \uD83D\uDC51",
                 "Literally the best! \uD83D\uDC95",
-                "Keep it up bestie! \uD83D\uDE80"
+                "Keep it up bestie! \uD83D\uDE80",
+                "Selalu konsisten keren deh \uD83D\uDC4F",
+                "Mood banget sih ini \uD83D\uDE4C",
+                "Love this so much! \u2764\uFE0F\uD83D\uDD25",
+                "Gas terus ya, sukses selalu! \uD83D\uDCAA",
+                "Can't stop scrolling, too good! \uD83D\uDE0D",
+                "Inspiratif banget, salut! \u2728",
+                "Kontennya makin hari makin kece \uD83D\uDE4C",
+                "Top tier content as always \uD83D\uDC51",
+                "Wah ini sih juara banget! \uD83C\uDFC6",
+                "Never disappoints fr fr \uD83D\uDD25"
             ],
             fashion: [
                 "Outfit on point bgt! \uD83D\uDC57\uD83D\uDD25",
                 "Drip check passed! \uD83D\uDCA7\u2728",
                 "Fashion icon sih ini mah \uD83D\uDC51",
                 "Slaying the game as always \uD83D\uDC85",
-                "Fit check: 100/10! \uD83D\uDD25"
+                "Fit check: 100/10! \uD83D\uDD25",
+                "Style goals banget sih \uD83D\uDE0D",
+                "Bisa aja mix n match nya \uD83D\uDC4F",
+                "Outfit inspo deh ini mah \u2728"
             ],
             food: [
                 "Looks yummy bgt! \uD83E\uDD24",
                 "Waduh bikin laper aja nih \uD83D\uDE2D",
                 "Mau dong! Sharing is caring \uD83E\uDD7A",
                 "Menu wajib cobain sih ini \uD83D\uDD25",
-                "Culinary goals bgt! \u2728"
+                "Culinary goals bgt! \u2728",
+                "Auto ngiler liat ini \uD83E\uDD24\uD83D\uDD25",
+                "Tempatnya dimana nih? Pengen cobain! \uD83D\uDE0D",
+                "Bikin laper tengah malem aja \uD83D\uDE2D"
             ],
             event: [
                 "Wah seru bgt pasti! \uD83C\uDF89",
                 "Pengen ikutan dong! \uD83E\uDD7A",
                 "Event of the year sih! \uD83D\uDD25",
                 "See you there! \uD83E\uDD29",
-                "Can't wait for this! \u2728"
+                "Can't wait for this! \u2728",
+                "Wah harus ikutan sih ini \uD83D\uDE4C",
+                "Best event ever! \uD83C\uDF89\uD83D\uDD25"
             ]
         };
 

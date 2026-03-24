@@ -20,13 +20,17 @@ const CONFIG = {
         PERSONA: 'acai_persona',
     },
 
-    // Gemini API - menggunakan model gratis terbaru (2025)
+    // Gemini API - menggunakan model gratis terbaru (2026)
     GEMINI_API_BASE: 'https://generativelanguage.googleapis.com/v1beta/models/',
     GEMINI_MODELS: [
         'gemini-2.0-flash',          // Gratis, stabil, cepat (recommended)
-        'gemini-2.5-flash-lite-preview-06-17',  // Preview model, sangat cepat
-        'gemini-2.5-flash-preview-05-20',       // Preview model, advanced
+        'gemini-2.0-flash-lite',     // Gratis, lebih ringan & cepat
+        'gemini-1.5-flash',          // Gratis, stabil, fallback
+        'gemini-1.5-flash-8b',       // Gratis, paling ringan, fallback terakhir
     ],
+
+    // Enable offline/fallback mode when API fails
+    ENABLE_OFFLINE_FALLBACK: true,
 
     // Default settings
     DEFAULT_SETTINGS: {
