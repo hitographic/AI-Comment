@@ -33,16 +33,30 @@ const AIEngine = {
                         })
                     }
                 );
+                console.log('Model ' + model + ' HTTP status: ' + response.status);
                 if (response.ok) {
                     this.activeModel = model;
-                    console.log('API key valid! Model: ' + model);
+                    console.log('API key valid! Active model: ' + model);
                     return { success: true, model: model };
                 }
                 var err = await response.json();
                 var errMsg = err.error ? (err.error.message || '') : '';
-                console.warn('Model ' + model + ' gagal: ' + errMsg);
+                var errStatus = err.error ? (err.error.status || '') : '';
+                console.warn('Model ' + model + ' gagal (HTTP ' + response.status + '): ' + errMsg);
+                
+                // API key invalid - stop immediately
                 if (errMsg.indexOf('API_KEY_INVALID') >= 0 || errMsg.indexOf('API key not valid') >= 0) {
-                    return { success: false, error: 'API Key tidak valid. Pastikan API key benar.' };
+                    return { success: false, error: 'API Key tidak valid. Pastikan API key benar dari aistudio.google.com/apikey' };
+                }
+                // 404 = model not found, try next model
+                if (response.status === 404) {
+                    console.warn('Model ' + model + ' not found, trying next...');
+                    continue;
+                }
+                // 429 = quota exceeded, try next model  
+                if (response.status === 429) {
+                    console.warn('Model ' + model + ' quota exceeded, trying next...');
+                    continue;
                 }
                 continue;
             } catch (error) {
@@ -76,6 +90,7 @@ const AIEngine = {
                         body: JSON.stringify(body)
                     }
                 );
+                console.log('Model ' + model + ' HTTP status: ' + response.status);
                 if (response.ok) {
                     var data = await response.json();
                     this.activeModel = model;
