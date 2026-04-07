@@ -901,10 +901,10 @@
 
                 <!-- Tab 2: Session ID Login -->
                 <div id="ig-login-session" style="display:none;">
-                    <p class="section-subtitle">Login tanpa challenge menggunakan Session ID dari browser</p>
-                    <div class="row g-2">
+                    <p class="section-subtitle">Login tanpa challenge menggunakan cookies dari browser</p>
+                    <div class="row g-2 mb-2">
                         <div class="col-md-8">
-                            <input type="text" class="form-control input-custom" id="ig-input-session-id" placeholder="Paste Session ID dari browser...">
+                            <input type="text" class="form-control input-custom" id="ig-input-session-id" placeholder="sessionid (WAJIB) — paste value cookie sessionid">
                         </div>
                         <div class="col-md-4">
                             <button class="btn btn-glow btn-start w-100" onclick="loginInstagramSession()" id="ig-session-btn">
@@ -913,22 +913,54 @@
                         </div>
                     </div>
 
+                    <!-- Extra cookies (toggle) -->
+                    <div class="mb-2">
+                        <a href="#" onclick="toggleExtraCookies(event)" style="color:var(--primary);font-size:0.8rem;text-decoration:none;">
+                            <i class="fas fa-plus-circle me-1" id="extra-cookies-icon"></i>
+                            <span id="extra-cookies-label">Tambah extra cookies (recommended!)</span>
+                        </a>
+                    </div>
+                    <div id="extra-cookies-panel" style="display:none;">
+                        <div class="row g-2 mb-1">
+                            <div class="col-md-6">
+                                <input type="text" class="form-control input-custom" id="ig-input-csrftoken" placeholder="csrftoken" style="font-size:0.8rem;">
+                            </div>
+                            <div class="col-md-6">
+                                <input type="text" class="form-control input-custom" id="ig-input-ds-user-id" placeholder="ds_user_id" style="font-size:0.8rem;">
+                            </div>
+                        </div>
+                        <div class="row g-2 mb-1">
+                            <div class="col-md-4">
+                                <input type="text" class="form-control input-custom" id="ig-input-mid" placeholder="mid" style="font-size:0.8rem;">
+                            </div>
+                            <div class="col-md-4">
+                                <input type="text" class="form-control input-custom" id="ig-input-rur" placeholder="rur" style="font-size:0.8rem;">
+                            </div>
+                            <div class="col-md-4">
+                                <input type="text" class="form-control input-custom" id="ig-input-ig-did" placeholder="ig_did" style="font-size:0.8rem;">
+                            </div>
+                        </div>
+                        <small class="text-muted d-block mb-2" style="font-size:0.75rem;">
+                            💡 Copy semua cookies di atas dari Chrome DevTools → Application → Cookies. Semakin lengkap, semakin stabil!
+                        </small>
+                    </div>
+
                     <!-- How to get Session ID -->
-                    <div class="mt-3 p-3" style="background:rgba(139,92,246,0.1);border-radius:12px;border:1px solid rgba(139,92,246,0.2);">
+                    <div class="mt-2 p-3" style="background:rgba(139,92,246,0.1);border-radius:12px;border:1px solid rgba(139,92,246,0.2);">
                         <h6 class="mb-2" style="color:var(--primary);font-size:0.85rem;">
-                            <i class="fas fa-info-circle me-1"></i> Cara Mendapatkan Session ID:
+                            <i class="fas fa-info-circle me-1"></i> Cara Mendapatkan Cookies:
                         </h6>
                         <ol class="mb-0 small text-muted" style="padding-left:20px;line-height:1.8;">
                             <li>Buka <strong>Instagram.com</strong> di Chrome & login seperti biasa</li>
                             <li>Tekan <strong>F12</strong> (Developer Tools)</li>
                             <li>Klik tab <strong>Application</strong> → <strong>Cookies</strong> → <strong>https://www.instagram.com</strong></li>
-                            <li>Cari cookie bernama <strong>sessionid</strong></li>
-                            <li>Copy <strong>Value</strong>-nya dan paste di atas ☝️</li>
+                            <li>Copy value dari: <strong>sessionid</strong> (wajib), <strong>csrftoken</strong>, <strong>ds_user_id</strong>, <strong>mid</strong>, <strong>rur</strong></li>
+                            <li>Paste masing-masing ke field di atas ☝️</li>
                         </ol>
                     </div>
 
                     <small class="text-muted mt-2 d-block">
-                        ✅ <strong>Tidak kena challenge!</strong> Session ID sudah terverifikasi di browser kamu.
+                        ✅ <strong>Tidak kena challenge!</strong> Cookies langsung dari browser kamu yang sudah terverifikasi.
                     </small>
                 </div>
             </div>
@@ -1498,6 +1530,22 @@
             }
         }
 
+        function toggleExtraCookies(event) {
+            if (event) event.preventDefault();
+            const panel = document.getElementById('extra-cookies-panel');
+            const icon = document.getElementById('extra-cookies-icon');
+            const label = document.getElementById('extra-cookies-label');
+            if (panel.style.display === 'none') {
+                panel.style.display = 'block';
+                icon.className = 'fas fa-minus-circle me-1';
+                label.textContent = 'Sembunyikan extra cookies';
+            } else {
+                panel.style.display = 'none';
+                icon.className = 'fas fa-plus-circle me-1';
+                label.textContent = 'Tambah extra cookies (recommended!)';
+            }
+        }
+
         function loginInstagramSession() {
             const sessionId = document.getElementById('ig-input-session-id').value.trim();
 
@@ -1517,10 +1565,32 @@
 
             showToast('Login dengan Session ID...', 'info');
 
+            // Kumpulkan extra cookies jika ada
+            const payload = { session_id: sessionId };
+            const extraFields = ['csrftoken', 'ds_user_id', 'mid', 'rur', 'ig_did'];
+            const fieldMap = {
+                'csrftoken': 'ig-input-csrftoken',
+                'ds_user_id': 'ig-input-ds-user-id',
+                'mid': 'ig-input-mid',
+                'rur': 'ig-input-rur',
+                'ig_did': 'ig-input-ig-did',
+            };
+            let extraCount = 0;
+            for (const [key, elId] of Object.entries(fieldMap)) {
+                const el = document.getElementById(elId);
+                if (el && el.value.trim()) {
+                    payload[key] = el.value.trim();
+                    extraCount++;
+                }
+            }
+            if (extraCount > 0) {
+                showToast(`📦 Mengirim ${extraCount + 1} cookies...`, 'info');
+            }
+
             fetch(`${API_BASE}/api/instagram/login-session`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ session_id: sessionId })
+                body: JSON.stringify(payload)
             })
             .then(r => r.json())
             .then(data => {

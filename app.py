@@ -286,7 +286,7 @@ class InstagramBot:
             add_log("instagram", f"❌ 2FA gagal: {str(e)}", "error")
             return {"success": False, "message": f"2FA gagal: {str(e)}"}
 
-    def login_with_session(self, session_id: str, username: str = "") -> dict:
+    def login_with_session(self, session_id: str, username: str = "", extra_cookies: dict = None) -> dict:
         """
         Login ke Instagram menggunakan Session ID dari browser.
         Tidak kena challenge karena menggunakan session yang sudah terverifikasi.
@@ -295,27 +295,89 @@ class InstagramBot:
         1. Login Instagram di browser (chrome)
         2. Buka Developer Tools (F12) → Application → Cookies
         3. Cari cookie bernama 'sessionid'
-        4. Copy value-nya
+        4. Copy value-nya (opsional: juga copy csrftoken, ds_user_id, mid, rur)
         """
         try:
             from instagrapi import Client
+            import re
 
             add_log("instagram", "🔑 Login dengan Session ID...", "info")
 
             self.client = Client()
-            self.client.delay_range = [1, 3]
+            self.client.delay_range = [2, 5]
             self.client.set_locale("id_ID")
             self.client.set_timezone_offset(7 * 3600)
 
-            # Set session ID langsung
-            self.client.login_by_sessionid(session_id)
+            # Build cookies dict — sessionid wajib, lainnya opsional
+            cookies = {"sessionid": session_id}
+            if extra_cookies:
+                for key in ["csrftoken", "ds_user_id", "mid", "rur", "ig_did", "ig_nrcb"]:
+                    if key in extra_cookies and extra_cookies[key]:
+                        cookies[key] = extra_cookies[key]
+                if cookies.get("ds_user_id"):
+                    add_log("instagram", f"🍪 Extra cookies: {', '.join(k for k in cookies if k != 'sessionid')}", "info")
 
-            # Coba ambil info user untuk verifikasi
+            # Extract user_id from session_id (format: <user_id>%3A...)
+            user_id_match = re.search(r"^(\d+)", session_id)
+            if not user_id_match:
+                return {"success": False, "message": "Session ID format tidak valid. Pastikan copy dari browser dengan benar."}
+            user_id = user_id_match.group(1)
+
+            # Set cookies dan authorization langsung (lebih reliable daripada login_by_sessionid)
+            self.client.settings = {
+                "cookies": cookies,
+                "authorization_data": {
+                    "ds_user_id": cookies.get("ds_user_id", user_id),
+                    "sessionid": session_id,
+                    "should_use_header_over_cookies": True,
+                },
+            }
+            self.client.init()
+
+            # Set authorization header manually
+            self.client.authorization_data = {
+                "ds_user_id": cookies.get("ds_user_id", user_id),
+                "sessionid": session_id,
+                "should_use_header_over_cookies": True,
+            }
+            # Update headers
+            self.client.private.headers.update({
+                "Authorization": self.client.authorization,
+            })
+
+            # Simpan full settings
+            self._saved_settings = self.client.get_settings()
+            add_log("instagram", "💾 Session settings tersimpan.", "info")
+
+            # Verifikasi: coba akses user info
+            real_username = username or "user"
             try:
                 user_info = self.client.account_info()
                 real_username = user_info.username
-            except Exception:
-                real_username = username or "user"
+            except Exception as e:
+                add_log("instagram", f"⚠️ account_info gagal ({e}), coba user_info...", "warning")
+                try:
+                    import re
+                    user_id = re.search(r"^\d+", session_id).group()
+                    user = self.client.user_info(int(user_id))
+                    real_username = user.username
+                except Exception:
+                    pass
+
+            # Test: pastikan bisa fetch data (ini yg sebelumnya gagal)
+            try:
+                # Coba fetch timeline/feed kecil untuk verifikasi session benar-benar works
+                self.client.get_timeline_feed()
+                add_log("instagram", "✅ Session verified - API access OK!", "success")
+            except Exception as feed_err:
+                add_log("instagram", f"⚠️ Timeline test: {feed_err}", "warning")
+                # Coba re-inject settings dan test lagi
+                try:
+                    self.client.set_settings(self._saved_settings)
+                    self.client.get_timeline_feed()
+                    add_log("instagram", "✅ Session OK setelah re-inject settings!", "success")
+                except Exception:
+                    add_log("instagram", "⚠️ Timeline gagal, tapi login tetap dicoba.", "warning")
 
             self.is_logged_in = True
             bot_state["instagram"]["is_logged_in"] = True
@@ -329,6 +391,17 @@ class InstagramBot:
             add_log("instagram", f"❌ Session ID gagal: {error_msg}", "error")
             return {"success": False, "message": f"Session ID tidak valid: {error_msg}"}
 
+    def _ensure_login(self) -> bool:
+        """Re-inject saved settings jika session expired/lost."""
+        if not self.client:
+            return False
+        try:
+            if hasattr(self, '_saved_settings') and self._saved_settings:
+                self.client.set_settings(self._saved_settings)
+            return True
+        except Exception:
+            return False
+
     def get_posts_by_hashtag(self, hashtag: str, amount: int = 9) -> list:
         """Ambil postingan berdasarkan hashtag."""
         try:
@@ -337,7 +410,17 @@ class InstagramBot:
             medias = self.client.hashtag_medias_recent(hashtag, amount=amount)
             return medias
         except Exception as e:
-            add_log("instagram", f"⚠️ Error ambil hashtag #{hashtag}: {e}", "warning")
+            error_str = str(e).lower()
+            if "login_required" in error_str or "login required" in error_str:
+                add_log("instagram", f"🔄 Session expired untuk hashtag, re-login...", "warning")
+                if self._ensure_login():
+                    try:
+                        medias = self.client.hashtag_medias_recent(hashtag, amount=amount)
+                        return medias
+                    except Exception as e2:
+                        add_log("instagram", f"⚠️ Retry hashtag #{hashtag} gagal: {e2}", "warning")
+            else:
+                add_log("instagram", f"⚠️ Error ambil hashtag #{hashtag}: {e}", "warning")
             return []
 
     def get_user_posts(self, username: str, amount: int = 5) -> list:
@@ -349,7 +432,18 @@ class InstagramBot:
             medias = self.client.user_medias(user_id, amount=amount)
             return medias
         except Exception as e:
-            add_log("instagram", f"⚠️ Error ambil posts @{username}: {e}", "warning")
+            error_str = str(e).lower()
+            if "login_required" in error_str or "login required" in error_str:
+                add_log("instagram", f"🔄 Session expired untuk user, re-login...", "warning")
+                if self._ensure_login():
+                    try:
+                        user_id = self.client.user_id_from_username(username)
+                        medias = self.client.user_medias(user_id, amount=amount)
+                        return medias
+                    except Exception as e2:
+                        add_log("instagram", f"⚠️ Retry posts @{username} gagal: {e2}", "warning")
+            else:
+                add_log("instagram", f"⚠️ Error ambil posts @{username}: {e}", "warning")
             return []
 
     def comment_on_post(self, media_id: str, comment_text: str) -> dict:
@@ -725,7 +819,14 @@ def ig_login_session():
     if len(session_id) < 10:
         return jsonify({"success": False, "message": "Session ID terlalu pendek, pastikan copy dengan benar."})
 
-    result = ig_bot.login_with_session(session_id, username)
+    # Extra cookies from browser (optional tapi sangat membantu)
+    extra_cookies = {}
+    for key in ["csrftoken", "ds_user_id", "mid", "rur", "ig_did", "ig_nrcb"]:
+        val = data.get(key, "").strip()
+        if val:
+            extra_cookies[key] = val
+
+    result = ig_bot.login_with_session(session_id, username, extra_cookies or None)
     return jsonify(result)
 
 
