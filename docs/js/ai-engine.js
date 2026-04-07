@@ -259,6 +259,7 @@ var AIEngine = {
 
     /**
      * Detect content category from caption text
+     * Improved: higher confidence scoring, longer keywords get more weight
      */
     detectCategory: function(caption) {
         if (!caption) return 'general';
@@ -268,22 +269,25 @@ var AIEngine = {
         var categories = Object.keys(this.CONTENT_PATTERNS);
         for (var i = 0; i < categories.length; i++) {
             var cat = categories[i];
+            if (cat === 'general') continue; // general is fallback only
             var keywords = this.CONTENT_PATTERNS[cat].keywords;
             if (!keywords || keywords.length === 0) continue;
 
             var score = 0;
             for (var j = 0; j < keywords.length; j++) {
                 if (text.indexOf(keywords[j]) >= 0) {
+                    // Longer keywords = higher confidence
                     score += 1;
-                    if (keywords[j].length > 5) score += 0.5;
+                    if (keywords[j].length > 6) score += 1;
+                    if (keywords[j].length > 10) score += 0.5;
                 }
             }
             if (score > 0) scores[cat] = score;
         }
 
-        // Find highest score
+        // Find highest score — need minimum 1.5 to beat general
         var bestCat = 'general';
-        var bestScore = 0;
+        var bestScore = 1;
         var cats = Object.keys(scores);
         for (var k = 0; k < cats.length; k++) {
             if (scores[cats[k]] > bestScore) {

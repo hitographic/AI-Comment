@@ -260,16 +260,18 @@ var WorkflowEngine = {
         var caption = post.caption || '';
         var category = AIEngine.detectCategory(caption);
 
-        this.log('🧠 Step 3: Analisis caption...', 'ai');
+        this.log('🧠 Step 3: Analisis caption post @' + (post.username || '?') + '...', 'ai');
         if (caption) {
-            var preview = caption.length > 70 ? caption.substring(0, 70) + '...' : caption;
+            var preview = caption.length > 80 ? caption.substring(0, 80) + '...' : caption;
             this.log('   📝 Caption: "' + preview + '"', 'ai');
+        } else {
+            this.log('   📝 Caption: (tidak ada caption)', 'ai');
         }
-        this.log('   🏷️ Kategori: ' + category.toUpperCase(), 'ai');
+        this.log('   🏷️ Kategori terdeteksi: ' + category.toUpperCase(), 'ai');
 
         await this.delay(800);
 
-        this.setNodeState('ai', 'completed', category);
+        this.setNodeState('ai', 'completed', '🏷️ ' + category);
         this.setConnectorState(2, 'completed');
 
         return { category: category, hasCaption: !!caption };
@@ -278,23 +280,25 @@ var WorkflowEngine = {
     executeStep4_Generate: async function(post, style, customPrompt) {
         this.setNodeState('generate', 'active', 'Generating...');
         this.setConnectorState(2, 'active');
-        this.log('✨ Step 4: Generate komentar...', 'ai');
+        this.log('✨ Step 4: Generate komentar sesuai kategori...', 'ai');
 
         var comment;
         try {
             comment = await AIEngine.smartComment(post, style, customPrompt);
             if (Storage.hasApiKey()) {
-                this.log('   🤖 AI Generated: "' + comment + '"', 'ai');
+                this.log('   🤖 Mode: Gemini AI', 'ai');
             } else {
-                this.log('   🧠 Smart Template: "' + comment + '"', 'ai');
+                this.log('   🧠 Mode: Smart Template (' + (post.detectedCategory || AIEngine.detectCategory(post.caption || '')) + ')', 'ai');
             }
+            this.log('   💬 Komentar: "' + comment + '"', 'success');
         } catch (error) {
             this.log('   ⚠️ Fallback: ' + error.message, 'warning');
             var result = AIEngine.generateSmartComment(post.caption || '');
             comment = result.comment;
+            this.log('   💬 Komentar: "' + comment + '"', 'success');
         }
 
-        this.setNodeState('generate', 'completed', 'Generated ✓');
+        this.setNodeState('generate', 'completed', '💬 Generated ✓');
         this.setConnectorState(3, 'completed');
         return comment;
     },

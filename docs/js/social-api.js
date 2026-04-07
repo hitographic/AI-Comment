@@ -154,30 +154,34 @@ var SocialAPI = {
     // =============================================
 
     loginInstagram: async function(username, password, sessionId) {
-        var savedSession = Storage.getIGSession();
+        // Simulasi login — selalu berhasil asal ada username ATAU sessionId
+        await new Promise(function(r) { setTimeout(r, 800 + Math.random() * 500); });
+
         if (sessionId) {
             this.instagram = {
                 isLoggedIn: true,
-                username: username || savedSession?.username || 'user',
+                username: username || 'user_' + Date.now(),
                 sessionId: sessionId,
             };
             Storage.setIGSession(this.instagram);
             return { success: true, username: this.instagram.username };
         }
-        if (username && password) {
+        if (username) {
+            // Username saja sudah cukup (ini simulasi, password opsional)
             this.instagram = {
                 isLoggedIn: true,
-                username: username,
+                username: username.replace('@', ''),
                 sessionId: 'simulated_' + Date.now(),
             };
             Storage.setIGSession(this.instagram);
-            return { success: true, username: username };
+            return { success: true, username: this.instagram.username };
         }
+        var savedSession = Storage.getIGSession();
         if (savedSession && savedSession.isLoggedIn) {
             this.instagram = savedSession;
             return { success: true, username: savedSession.username };
         }
-        return { success: false, error: 'Masukkan username/password atau session ID' };
+        return { success: false, error: 'Masukkan username atau session ID' };
     },
 
     logoutInstagram: function() {
@@ -188,17 +192,32 @@ var SocialAPI = {
     /**
      * Get Instagram posts from a user — setiap post punya caption
      * yang UNIK agar komentar bisa menyesuaikan konten.
+     * Caption dipilih dari kategori berbeda agar demo lebih jelas.
      */
     getInstagramPosts: async function(target, count) {
         count = count || 5;
-        var cleanTarget = target.replace('@', '').replace(/https?:\/\/.*instagram\.com\//, '').replace(/\/$/, '');
+        var cleanTarget = target.replace('@', '').replace(/https?:\/\/.*instagram\.com\//, '').replace(/\/$/, '').replace(/\?.*$/, '');
         var posts = [];
 
-        // Pick random caption categories untuk simulasi feed yang variatif
+        // Distribute categories evenly so demo shows varied detection
         var categories = Object.keys(this.SAMPLE_CAPTIONS);
+        // Remove 'general' — we want specific categories to show smart detection
+        var specificCats = [];
+        for (var c = 0; c < categories.length; c++) {
+            if (categories[c] !== 'general') specificCats.push(categories[c]);
+        }
+
+        // Shuffle categories
+        for (var s = specificCats.length - 1; s > 0; s--) {
+            var r = Math.floor(Math.random() * (s + 1));
+            var temp = specificCats[s];
+            specificCats[s] = specificCats[r];
+            specificCats[r] = temp;
+        }
 
         for (var i = 0; i < count; i++) {
-            var category = categories[Math.floor(Math.random() * categories.length)];
+            // Cycle through shuffled categories so each post is different
+            var category = specificCats[i % specificCats.length];
             var captions = this.SAMPLE_CAPTIONS[category];
             var caption = captions[Math.floor(Math.random() * captions.length)];
 
@@ -237,30 +256,34 @@ var SocialAPI = {
     // =============================================
 
     loginTiktok: async function(username, password, sessionId) {
-        var savedSession = Storage.getTTSession();
+        // Simulasi login — selalu berhasil asal ada username ATAU sessionId
+        await new Promise(function(r) { setTimeout(r, 800 + Math.random() * 500); });
+
         if (sessionId) {
             this.tiktok = {
                 isLoggedIn: true,
-                username: username || savedSession?.username || 'user',
+                username: username || 'user_' + Date.now(),
                 sessionId: sessionId,
             };
             Storage.setTTSession(this.tiktok);
             return { success: true, username: this.tiktok.username };
         }
-        if (username && password) {
+        if (username) {
+            // Username saja sudah cukup (ini simulasi, password opsional)
             this.tiktok = {
                 isLoggedIn: true,
-                username: username,
+                username: username.replace('@', ''),
                 sessionId: 'simulated_' + Date.now(),
             };
             Storage.setTTSession(this.tiktok);
-            return { success: true, username: username };
+            return { success: true, username: this.tiktok.username };
         }
+        var savedSession = Storage.getTTSession();
         if (savedSession && savedSession.isLoggedIn) {
             this.tiktok = savedSession;
             return { success: true, username: savedSession.username };
         }
-        return { success: false, error: 'Masukkan username/password atau session ID' };
+        return { success: false, error: 'Masukkan username atau session ID' };
     },
 
     logoutTiktok: function() {
@@ -270,12 +293,22 @@ var SocialAPI = {
 
     getTiktokPosts: async function(target, count) {
         count = count || 5;
-        var cleanTarget = target.replace('@', '');
+        var cleanTarget = target.replace('@', '').replace(/https?:\/\/.*tiktok\.com\/@?/, '').replace(/\/$/, '').replace(/\?.*$/, '');
         var posts = [];
         var categories = Object.keys(this.SAMPLE_CAPTIONS);
+        var specificCats = [];
+        for (var c = 0; c < categories.length; c++) {
+            if (categories[c] !== 'general') specificCats.push(categories[c]);
+        }
+        for (var s = specificCats.length - 1; s > 0; s--) {
+            var r = Math.floor(Math.random() * (s + 1));
+            var temp = specificCats[s];
+            specificCats[s] = specificCats[r];
+            specificCats[r] = temp;
+        }
 
         for (var i = 0; i < count; i++) {
-            var category = categories[Math.floor(Math.random() * categories.length)];
+            var category = specificCats[i % specificCats.length];
             var captions = this.SAMPLE_CAPTIONS[category];
             var caption = captions[Math.floor(Math.random() * captions.length)];
 
