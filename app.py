@@ -286,6 +286,49 @@ class InstagramBot:
             add_log("instagram", f"❌ 2FA gagal: {str(e)}", "error")
             return {"success": False, "message": f"2FA gagal: {str(e)}"}
 
+    def login_with_session(self, session_id: str, username: str = "") -> dict:
+        """
+        Login ke Instagram menggunakan Session ID dari browser.
+        Tidak kena challenge karena menggunakan session yang sudah terverifikasi.
+
+        Cara mendapatkan session ID:
+        1. Login Instagram di browser (chrome)
+        2. Buka Developer Tools (F12) → Application → Cookies
+        3. Cari cookie bernama 'sessionid'
+        4. Copy value-nya
+        """
+        try:
+            from instagrapi import Client
+
+            add_log("instagram", "🔑 Login dengan Session ID...", "info")
+
+            self.client = Client()
+            self.client.delay_range = [1, 3]
+            self.client.set_locale("id_ID")
+            self.client.set_timezone_offset(7 * 3600)
+
+            # Set session ID langsung
+            self.client.login_by_sessionid(session_id)
+
+            # Coba ambil info user untuk verifikasi
+            try:
+                user_info = self.client.account_info()
+                real_username = user_info.username
+            except Exception:
+                real_username = username or "user"
+
+            self.is_logged_in = True
+            bot_state["instagram"]["is_logged_in"] = True
+            bot_state["instagram"]["username"] = real_username
+
+            add_log("instagram", f"✅ Login berhasil via Session ID! @{real_username}", "success")
+            return {"success": True, "message": f"Login berhasil! Welcome @{real_username}"}
+
+        except Exception as e:
+            error_msg = str(e)
+            add_log("instagram", f"❌ Session ID gagal: {error_msg}", "error")
+            return {"success": False, "message": f"Session ID tidak valid: {error_msg}"}
+
     def get_posts_by_hashtag(self, hashtag: str, amount: int = 9) -> list:
         """Ambil postingan berdasarkan hashtag."""
         try:
@@ -669,6 +712,23 @@ def ig_login():
     return jsonify(result)
 
 
+@app.route("/api/instagram/login-session", methods=["POST"])
+def ig_login_session():
+    """Login Instagram via Session ID (no challenge!)."""
+    data = request.json or {}
+    session_id = data.get("session_id", "").strip()
+    username = data.get("username", "").strip()
+
+    if not session_id:
+        return jsonify({"success": False, "message": "Session ID wajib diisi!"})
+
+    if len(session_id) < 10:
+        return jsonify({"success": False, "message": "Session ID terlalu pendek, pastikan copy dengan benar."})
+
+    result = ig_bot.login_with_session(session_id, username)
+    return jsonify(result)
+
+
 @app.route("/api/instagram/challenge", methods=["POST"])
 def ig_challenge():
     """Submit kode verifikasi challenge Instagram."""
@@ -905,4 +965,4 @@ if __name__ == "__main__":
     ╚══════════════════════════════════════════╝
     """
     )
-    socketio.run(app, debug=True, host="0.0.0.0", port=5001)
+    socketio.run(app, debug=False, host="0.0.0.0", port=5001)

@@ -858,26 +858,79 @@
                 </div>
             </div>
 
-            <!-- Login Section -->
+            <!-- Login Section - Tabs: Password vs Session ID -->
             <div class="card-custom mb-3" id="ig-login-section">
                 <h6 class="section-title">🔑 Login Instagram</h6>
-                <p class="section-subtitle">Masukkan credentials Instagram kamu</p>
-                <div class="row g-2">
-                    <div class="col-md-5">
-                        <input type="text" class="form-control input-custom" id="ig-input-username" placeholder="Username Instagram">
+
+                <!-- Login Method Tabs -->
+                <ul class="nav nav-pills mb-3" style="gap:8px;">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" onclick="switchLoginTab('password', event)" id="tab-password"
+                           style="background:var(--primary-gradient);color:#fff;border-radius:12px;font-size:0.85rem;padding:6px 16px;">
+                            <i class="fas fa-key me-1"></i> Username & Password
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="switchLoginTab('session', event)" id="tab-session"
+                           style="background:rgba(255,255,255,0.1);color:#aaa;border-radius:12px;font-size:0.85rem;padding:6px 16px;">
+                            <i class="fas fa-cookie-bite me-1"></i> Session ID (Recommended)
+                        </a>
+                    </li>
+                </ul>
+
+                <!-- Tab 1: Username & Password -->
+                <div id="ig-login-password">
+                    <p class="section-subtitle">Masukkan credentials Instagram kamu</p>
+                    <div class="row g-2">
+                        <div class="col-md-5">
+                            <input type="text" class="form-control input-custom" id="ig-input-username" placeholder="Username Instagram">
+                        </div>
+                        <div class="col-md-5">
+                            <input type="password" class="form-control input-custom" id="ig-input-password" placeholder="Password">
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn btn-glow btn-start w-100" onclick="loginInstagram()">
+                                <i class="fas fa-sign-in-alt me-1"></i> Login
+                            </button>
+                        </div>
                     </div>
-                    <div class="col-md-5">
-                        <input type="password" class="form-control input-custom" id="ig-input-password" placeholder="Password">
-                    </div>
-                    <div class="col-md-2">
-                        <button class="btn btn-glow btn-start w-100" onclick="loginInstagram()">
-                            <i class="fas fa-sign-in-alt me-1"></i> Login
-                        </button>
-                    </div>
+                    <small class="text-muted mt-2 d-block">
+                        ⚠️ Mungkin kena challenge verification. Gunakan Session ID jika gagal.
+                    </small>
                 </div>
-                <small class="text-muted mt-2 d-block">
-                    ⚠️ Credentials hanya disimpan di session, tidak di database. Gunakan akun yang aman.
-                </small>
+
+                <!-- Tab 2: Session ID Login -->
+                <div id="ig-login-session" style="display:none;">
+                    <p class="section-subtitle">Login tanpa challenge menggunakan Session ID dari browser</p>
+                    <div class="row g-2">
+                        <div class="col-md-8">
+                            <input type="text" class="form-control input-custom" id="ig-input-session-id" placeholder="Paste Session ID dari browser...">
+                        </div>
+                        <div class="col-md-4">
+                            <button class="btn btn-glow btn-start w-100" onclick="loginInstagramSession()" id="ig-session-btn">
+                                <i class="fas fa-cookie-bite me-1"></i> Login Session
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- How to get Session ID -->
+                    <div class="mt-3 p-3" style="background:rgba(139,92,246,0.1);border-radius:12px;border:1px solid rgba(139,92,246,0.2);">
+                        <h6 class="mb-2" style="color:var(--primary);font-size:0.85rem;">
+                            <i class="fas fa-info-circle me-1"></i> Cara Mendapatkan Session ID:
+                        </h6>
+                        <ol class="mb-0 small text-muted" style="padding-left:20px;line-height:1.8;">
+                            <li>Buka <strong>Instagram.com</strong> di Chrome & login seperti biasa</li>
+                            <li>Tekan <strong>F12</strong> (Developer Tools)</li>
+                            <li>Klik tab <strong>Application</strong> → <strong>Cookies</strong> → <strong>https://www.instagram.com</strong></li>
+                            <li>Cari cookie bernama <strong>sessionid</strong></li>
+                            <li>Copy <strong>Value</strong>-nya dan paste di atas ☝️</li>
+                        </ol>
+                    </div>
+
+                    <small class="text-muted mt-2 d-block">
+                        ✅ <strong>Tidak kena challenge!</strong> Session ID sudah terverifikasi di browser kamu.
+                    </small>
+                </div>
             </div>
 
             <!-- Challenge / 2FA Verification Section (hidden by default) -->
@@ -895,7 +948,8 @@
                     </div>
                 </div>
                 <small class="text-muted mt-2 d-block">
-                    📧 Kode dikirim ke email/SMS yang terdaftar di akun Instagram kamu.
+                    📧 Kode dikirim ke email/SMS yang terdaftar di akun Instagram.
+                    <br>💡 <strong>Tidak dapat kode?</strong> Coba login dengan <a href="#" onclick="switchLoginTab('session', event); document.getElementById('ig-challenge-section').style.display='none';" style="color:var(--primary);">Session ID</a> sebagai alternatif.
                 </small>
             </div>
 
@@ -1419,6 +1473,68 @@
         // =============================================
         // Track challenge type for submit
         let pendingChallengeType = null; // 'challenge' or '2fa'
+
+        function switchLoginTab(tab, event) {
+            if (event) event.preventDefault();
+            const tabPassword = document.getElementById('tab-password');
+            const tabSession = document.getElementById('tab-session');
+            const panelPassword = document.getElementById('ig-login-password');
+            const panelSession = document.getElementById('ig-login-session');
+
+            if (tab === 'session') {
+                tabPassword.style.background = 'rgba(255,255,255,0.1)';
+                tabPassword.style.color = '#aaa';
+                tabSession.style.background = 'var(--primary-gradient)';
+                tabSession.style.color = '#fff';
+                panelPassword.style.display = 'none';
+                panelSession.style.display = 'block';
+            } else {
+                tabSession.style.background = 'rgba(255,255,255,0.1)';
+                tabSession.style.color = '#aaa';
+                tabPassword.style.background = 'var(--primary-gradient)';
+                tabPassword.style.color = '#fff';
+                panelSession.style.display = 'none';
+                panelPassword.style.display = 'block';
+            }
+        }
+
+        function loginInstagramSession() {
+            const sessionId = document.getElementById('ig-input-session-id').value.trim();
+
+            if (!sessionId) {
+                showToast('Paste Session ID dulu ya! 🍪', 'warning');
+                return;
+            }
+
+            if (sessionId.length < 10) {
+                showToast('Session ID terlalu pendek, pastikan copy dengan benar! 📋', 'warning');
+                return;
+            }
+
+            const btn = document.getElementById('ig-session-btn');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Connecting...';
+            btn.disabled = true;
+
+            showToast('Login dengan Session ID...', 'info');
+
+            fetch(`${API_BASE}/api/instagram/login-session`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ session_id: sessionId })
+            })
+            .then(r => r.json())
+            .then(data => {
+                showToast(data.message, data.success ? 'success' : 'error');
+                if (data.success) {
+                    loadStats();
+                }
+            })
+            .catch(e => showToast('Error koneksi ke server', 'error'))
+            .finally(() => {
+                btn.innerHTML = '<i class="fas fa-cookie-bite me-1"></i> Login Session';
+                btn.disabled = false;
+            });
+        }
 
         function loginInstagram() {
             const username = document.getElementById('ig-input-username').value;
