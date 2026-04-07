@@ -880,6 +880,25 @@
                 </small>
             </div>
 
+            <!-- Challenge / 2FA Verification Section (hidden by default) -->
+            <div class="card-custom mb-3" id="ig-challenge-section" style="display:none;">
+                <h6 class="section-title">🔒 Verifikasi Keamanan</h6>
+                <p class="section-subtitle" id="ig-challenge-msg">Instagram meminta verifikasi. Cek email/SMS kamu.</p>
+                <div class="row g-2">
+                    <div class="col-md-8">
+                        <input type="text" class="form-control input-custom" id="ig-input-code" placeholder="Masukkan kode verifikasi (6 digit)" maxlength="10">
+                    </div>
+                    <div class="col-md-4">
+                        <button class="btn btn-glow btn-start w-100" id="ig-submit-code-btn" onclick="submitChallengeCode()">
+                            <i class="fas fa-check me-1"></i> Verifikasi
+                        </button>
+                    </div>
+                </div>
+                <small class="text-muted mt-2 d-block">
+                    📧 Kode dikirim ke email/SMS yang terdaftar di akun Instagram kamu.
+                </small>
+            </div>
+
             <!-- Target Settings -->
             <div class="card-custom mb-3">
                 <h6 class="section-title">🎯 Target Komentar</h6>
@@ -1398,6 +1417,9 @@
         // =============================================
         // INSTAGRAM ACTIONS
         // =============================================
+        // Track challenge type for submit
+        let pendingChallengeType = null; // 'challenge' or '2fa'
+
         function loginInstagram() {
             const username = document.getElementById('ig-input-username').value;
             const password = document.getElementById('ig-input-password').value;
@@ -1416,11 +1438,81 @@
             })
             .then(r => r.json())
             .then(data => {
-                showToast(data.message, data.success ? 'success' : 'error');
-                if (data.success) loadStats();
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    document.getElementById('ig-challenge-section').style.display = 'none';
+                    loadStats();
+                } else if (data.challenge_required) {
+                    // Show challenge verification form
+                    pendingChallengeType = 'challenge';
+                    document.getElementById('ig-challenge-section').style.display = 'block';
+                    document.getElementById('ig-challenge-msg').textContent = data.message;
+                    document.getElementById('ig-input-code').value = '';
+                    document.getElementById('ig-input-code').focus();
+                    showToast('🔒 Verifikasi dibutuhkan! Cek email/SMS kamu.', 'warning');
+                } else if (data.two_factor_required) {
+                    // Show 2FA form
+                    pendingChallengeType = '2fa';
+                    document.getElementById('ig-challenge-section').style.display = 'block';
+                    document.getElementById('ig-challenge-msg').textContent = data.message;
+                    document.getElementById('ig-input-code').placeholder = 'Masukkan kode 2FA dari authenticator app';
+                    document.getElementById('ig-input-code').value = '';
+                    document.getElementById('ig-input-code').focus();
+                    showToast('🔐 Masukkan kode 2FA dari authenticator app.', 'warning');
+                } else {
+                    showToast(data.message, 'error');
+                }
             })
             .catch(e => showToast('Error koneksi ke server', 'error'));
         }
+
+        function submitChallengeCode() {
+            const code = document.getElementById('ig-input-code').value.trim();
+            if (!code) {
+                showToast('Masukkan kode verifikasi!', 'warning');
+                return;
+            }
+
+            const endpoint = pendingChallengeType === '2fa'
+                ? '/api/instagram/2fa'
+                : '/api/instagram/challenge';
+
+            const btn = document.getElementById('ig-submit-code-btn');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Memverifikasi...';
+            btn.disabled = true;
+
+            showToast('Mengirim kode verifikasi...', 'info');
+
+            fetch(`${API_BASE}${endpoint}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code })
+            })
+            .then(r => r.json())
+            .then(data => {
+                showToast(data.message, data.success ? 'success' : 'error');
+                if (data.success) {
+                    document.getElementById('ig-challenge-section').style.display = 'none';
+                    pendingChallengeType = null;
+                    loadStats();
+                }
+            })
+            .catch(e => showToast('Error koneksi ke server', 'error'))
+            .finally(() => {
+                btn.innerHTML = '<i class="fas fa-check me-1"></i> Verifikasi';
+                btn.disabled = false;
+            });
+        }
+
+        // Allow Enter key to submit code
+        document.addEventListener('DOMContentLoaded', function() {
+            const codeInput = document.getElementById('ig-input-code');
+            if (codeInput) {
+                codeInput.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') submitChallengeCode();
+                });
+            }
+        });
 
         function startIG() {
             const hashtags = tags.ig.hashtag;

@@ -130,29 +130,161 @@ class InstagramBot:
     def __init__(self):
         self.client = None
         self.is_logged_in = False
+        self._challenge_username = None
+        self._challenge_password = None
 
     def login(self, username: str, password: str) -> dict:
-        """Login ke Instagram."""
+        """Login ke Instagram dengan challenge handling."""
         try:
             from instagrapi import Client
+            from instagrapi.exceptions import (
+                ChallengeRequired,
+                TwoFactorRequired,
+                LoginRequired,
+            )
 
             self.client = Client()
             self.client.delay_range = [1, 3]
 
+            # Set device/user agent agar tidak terlalu mencurigakan
+            self.client.set_locale("id_ID")
+            self.client.set_timezone_offset(7 * 3600)  # WIB
+
             add_log("instagram", f"🔑 Mencoba login sebagai @{username}...", "info")
 
-            self.client.login(username, password)
-            self.is_logged_in = True
-            bot_state["instagram"]["is_logged_in"] = True
-            bot_state["instagram"]["username"] = username
+            # Simpan credential untuk challenge resolve nanti
+            self._challenge_username = username
+            self._challenge_password = password
 
-            add_log("instagram", f"✅ Berhasil login sebagai @{username}!", "success")
-            return {"success": True, "message": f"Login berhasil! Welcome @{username}"}
+            try:
+                self.client.login(username, password)
+                self.is_logged_in = True
+                bot_state["instagram"]["is_logged_in"] = True
+                bot_state["instagram"]["username"] = username
+
+                add_log("instagram", f"✅ Berhasil login sebagai @{username}!", "success")
+                return {"success": True, "message": f"Login berhasil! Welcome @{username}"}
+
+            except ChallengeRequired:
+                add_log("instagram", "🔒 Challenge terdeteksi! Mengirim kode verifikasi...", "warning")
+
+                try:
+                    # Minta Instagram kirim kode verifikasi
+                    challenge_path = self.client.last_json.get("challenge", {}).get("api_path")
+                    if challenge_path:
+                        # Request challenge — biasanya kirim kode ke email/SMS
+                        self.client.challenge_resolve(self.client.last_json)
+                        method = "email/SMS"
+                        add_log("instagram", f"📧 Kode verifikasi dikirim via {method}!", "info")
+                        return {
+                            "success": False,
+                            "challenge_required": True,
+                            "message": f"Kode verifikasi dikirim ke {method}. Masukkan kode untuk melanjutkan.",
+                        }
+                    else:
+                        # Fallback: try challenge code request
+                        add_log("instagram", "📧 Kode verifikasi dikirim!", "info")
+                        return {
+                            "success": False,
+                            "challenge_required": True,
+                            "message": "Instagram meminta verifikasi. Cek email/SMS kamu, lalu masukkan kode.",
+                        }
+                except Exception as ce:
+                    add_log("instagram", f"📧 Challenge diminta. Cek email/SMS kamu. ({ce})", "warning")
+                    return {
+                        "success": False,
+                        "challenge_required": True,
+                        "message": "Instagram meminta verifikasi. Cek email/SMS kamu, lalu masukkan kode.",
+                    }
+
+            except TwoFactorRequired:
+                add_log("instagram", "🔐 Two-Factor Authentication aktif!", "warning")
+                return {
+                    "success": False,
+                    "two_factor_required": True,
+                    "message": "Akun menggunakan 2FA. Masukkan kode dari authenticator app.",
+                }
 
         except Exception as e:
             error_msg = str(e)
+            # Check if it's actually a challenge in the error message
+            if "challenge_required" in error_msg.lower() or "challenge" in error_msg.lower():
+                add_log("instagram", "🔒 Challenge terdeteksi dari error!", "warning")
+                return {
+                    "success": False,
+                    "challenge_required": True,
+                    "message": "Instagram meminta verifikasi. Cek email/SMS kamu, lalu masukkan kode.",
+                }
             add_log("instagram", f"❌ Login gagal: {error_msg}", "error")
             return {"success": False, "message": f"Login gagal: {error_msg}"}
+
+    def submit_challenge_code(self, code: str) -> dict:
+        """Submit kode verifikasi challenge Instagram."""
+        try:
+            if not self.client:
+                return {"success": False, "message": "Client belum diinisialisasi. Login ulang dulu."}
+
+            add_log("instagram", f"🔑 Mengirim kode verifikasi: {code}...", "info")
+
+            # Try challenge code
+            try:
+                self.client.challenge_code_handler = lambda username, choice: code
+                self.client.login(
+                    self._challenge_username,
+                    self._challenge_password,
+                    verification_code=code,
+                )
+            except Exception:
+                # Alternative: direct challenge resolve with code
+                try:
+                    self.client.challenge_resolve(self.client.last_json, code=code)
+                except Exception:
+                    pass
+
+                # Try re-login after challenge
+                try:
+                    self.client.login(self._challenge_username, self._challenge_password)
+                except Exception as re_err:
+                    if "challenge" in str(re_err).lower():
+                        return {"success": False, "message": "Kode salah atau expired. Coba login ulang."}
+                    raise re_err
+
+            self.is_logged_in = True
+            bot_state["instagram"]["is_logged_in"] = True
+            bot_state["instagram"]["username"] = self._challenge_username
+
+            add_log("instagram", f"✅ Verifikasi berhasil! Login sebagai @{self._challenge_username}!", "success")
+            return {"success": True, "message": f"Verifikasi berhasil! Welcome @{self._challenge_username}"}
+
+        except Exception as e:
+            error_msg = str(e)
+            add_log("instagram", f"❌ Verifikasi gagal: {error_msg}", "error")
+            return {"success": False, "message": f"Verifikasi gagal: {error_msg}"}
+
+    def submit_2fa_code(self, code: str) -> dict:
+        """Submit kode 2FA."""
+        try:
+            if not self.client:
+                return {"success": False, "message": "Client belum diinisialisasi."}
+
+            add_log("instagram", f"🔐 Mengirim kode 2FA...", "info")
+
+            self.client.login(
+                self._challenge_username,
+                self._challenge_password,
+                verification_code=code,
+            )
+
+            self.is_logged_in = True
+            bot_state["instagram"]["is_logged_in"] = True
+            bot_state["instagram"]["username"] = self._challenge_username
+
+            add_log("instagram", f"✅ 2FA berhasil! Login sebagai @{self._challenge_username}!", "success")
+            return {"success": True, "message": f"Login berhasil! Welcome @{self._challenge_username}"}
+
+        except Exception as e:
+            add_log("instagram", f"❌ 2FA gagal: {str(e)}", "error")
+            return {"success": False, "message": f"2FA gagal: {str(e)}"}
 
     def get_posts_by_hashtag(self, hashtag: str, amount: int = 9) -> list:
         """Ambil postingan berdasarkan hashtag."""
@@ -534,6 +666,32 @@ def ig_login():
         return jsonify({"success": False, "message": "Username dan password wajib diisi!"})
 
     result = ig_bot.login(username, password)
+    return jsonify(result)
+
+
+@app.route("/api/instagram/challenge", methods=["POST"])
+def ig_challenge():
+    """Submit kode verifikasi challenge Instagram."""
+    data = request.json or {}
+    code = data.get("code", "").strip()
+
+    if not code:
+        return jsonify({"success": False, "message": "Masukkan kode verifikasi!"})
+
+    result = ig_bot.submit_challenge_code(code)
+    return jsonify(result)
+
+
+@app.route("/api/instagram/2fa", methods=["POST"])
+def ig_2fa():
+    """Submit kode 2FA."""
+    data = request.json or {}
+    code = data.get("code", "").strip()
+
+    if not code:
+        return jsonify({"success": False, "message": "Masukkan kode 2FA!"})
+
+    result = ig_bot.submit_2fa_code(code)
     return jsonify(result)
 
 
