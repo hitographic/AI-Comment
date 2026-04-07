@@ -159,6 +159,7 @@ class InstagramBot:
             try:
                 self.client.login(username, password)
                 self.is_logged_in = True
+                self._saved_settings = self.client.get_settings()
                 bot_state["instagram"]["is_logged_in"] = True
                 bot_state["instagram"]["username"] = username
 
@@ -289,106 +290,111 @@ class InstagramBot:
     def login_with_session(self, session_id: str, username: str = "", extra_cookies: dict = None) -> dict:
         """
         Login ke Instagram menggunakan Session ID dari browser.
-        Tidak kena challenge karena menggunakan session yang sudah terverifikasi.
 
-        Cara mendapatkan session ID:
-        1. Login Instagram di browser (chrome)
-        2. Buka Developer Tools (F12) → Application → Cookies
-        3. Cari cookie bernama 'sessionid'
-        4. Copy value-nya (opsional: juga copy csrftoken, ds_user_id, mid, rur)
+        PENTING: login_by_sessionid() bisa "sukses" padahal session expired,
+        karena fallback ke public GraphQL API yang gak butuh auth.
+        Kita HARUS verifikasi dengan private API call sebelum claim success.
         """
         try:
             from instagrapi import Client
+            from instagrapi.exceptions import LoginRequired
             import re
 
             add_log("instagram", "🔑 Login dengan Session ID...", "info")
 
-            self.client = Client()
-            self.client.delay_range = [2, 5]
-            self.client.set_locale("id_ID")
-            self.client.set_timezone_offset(7 * 3600)
-
-            # Build cookies dict — sessionid wajib, lainnya opsional
-            cookies = {"sessionid": session_id}
-            if extra_cookies:
-                for key in ["csrftoken", "ds_user_id", "mid", "rur", "ig_did", "ig_nrcb"]:
-                    if key in extra_cookies and extra_cookies[key]:
-                        cookies[key] = extra_cookies[key]
-                if cookies.get("ds_user_id"):
-                    add_log("instagram", f"🍪 Extra cookies: {', '.join(k for k in cookies if k != 'sessionid')}", "info")
-
-            # Extract user_id from session_id (format: <user_id>%3A...)
+            # Validasi format session ID (harus ada user_id di depan)
             user_id_match = re.search(r"^(\d+)", session_id)
             if not user_id_match:
-                return {"success": False, "message": "Session ID format tidak valid. Pastikan copy dari browser dengan benar."}
-            user_id = user_id_match.group(1)
+                return {
+                    "success": False,
+                    "message": "❌ Format Session ID tidak valid. Session ID biasanya diawali angka (user ID)."
+                }
 
-            # Set cookies dan authorization langsung (lebih reliable daripada login_by_sessionid)
-            self.client.settings = {
-                "cookies": cookies,
-                "authorization_data": {
-                    "ds_user_id": cookies.get("ds_user_id", user_id),
-                    "sessionid": session_id,
-                    "should_use_header_over_cookies": True,
-                },
-            }
-            self.client.init()
+            self.client = Client()
+            self.client.delay_range = [2, 5]
 
-            # Set authorization header manually
-            self.client.authorization_data = {
-                "ds_user_id": cookies.get("ds_user_id", user_id),
-                "sessionid": session_id,
-                "should_use_header_over_cookies": True,
-            }
-            # Update headers
-            self.client.private.headers.update({
-                "Authorization": self.client.authorization,
-            })
+            # ---- METODE 1: login_by_sessionid (cara resmi instagrapi) ----
+            add_log("instagram", "🔄 Mencoba login_by_sessionid...", "info")
+            try:
+                self.client.login_by_sessionid(session_id)
+                add_log("instagram", f"📋 login_by_sessionid OK (username: {self.client.username})", "info")
+            except AssertionError:
+                return {
+                    "success": False,
+                    "message": "❌ Session ID terlalu pendek (< 30 karakter). Pastikan copy LENGKAP dari browser."
+                }
+            except Exception as e:
+                add_log("instagram", f"⚠️ login_by_sessionid error: {e}", "warning")
+                # Jangan return, coba metode manual di bawah
 
-            # Simpan full settings
-            self._saved_settings = self.client.get_settings()
-            add_log("instagram", "💾 Session settings tersimpan.", "info")
+            # ---- VERIFIKASI KRITIS: test private API ----
+            # Ini yang membedakan session valid vs expired
+            add_log("instagram", "🔍 Verifikasi session dengan private API...", "info")
 
-            # Verifikasi: coba akses user info
-            real_username = username or "user"
+            session_works = False
+            real_username = self.client.username or username or "user"
+
+            # Test 1: account_info (private v1 endpoint)
             try:
                 user_info = self.client.account_info()
                 real_username = user_info.username
-            except Exception as e:
-                add_log("instagram", f"⚠️ account_info gagal ({e}), coba user_info...", "warning")
-                try:
-                    import re
-                    user_id = re.search(r"^\d+", session_id).group()
-                    user = self.client.user_info(int(user_id))
-                    real_username = user.username
-                except Exception:
-                    pass
+                session_works = True
+                add_log("instagram", f"✅ account_info OK: @{real_username}", "success")
+            except (LoginRequired, Exception) as e:
+                add_log("instagram", f"⚠️ account_info gagal: {e}", "warning")
 
-            # Test: pastikan bisa fetch data (ini yg sebelumnya gagal)
-            try:
-                # Coba fetch timeline/feed kecil untuk verifikasi session benar-benar works
-                self.client.get_timeline_feed()
-                add_log("instagram", "✅ Session verified - API access OK!", "success")
-            except Exception as feed_err:
-                add_log("instagram", f"⚠️ Timeline test: {feed_err}", "warning")
-                # Coba re-inject settings dan test lagi
+            # Test 2: get_timeline_feed (fallback test)
+            if not session_works:
                 try:
-                    self.client.set_settings(self._saved_settings)
                     self.client.get_timeline_feed()
-                    add_log("instagram", "✅ Session OK setelah re-inject settings!", "success")
-                except Exception:
-                    add_log("instagram", "⚠️ Timeline gagal, tapi login tetap dicoba.", "warning")
+                    session_works = True
+                    add_log("instagram", "✅ timeline_feed OK", "success")
+                except (LoginRequired, Exception) as e:
+                    add_log("instagram", f"⚠️ timeline_feed gagal: {e}", "warning")
 
+            # Test 3: Coba direct inbox sebagai last resort
+            if not session_works:
+                try:
+                    self.client.direct_threads(amount=1)
+                    session_works = True
+                    add_log("instagram", "✅ direct_threads OK", "success")
+                except (LoginRequired, Exception) as e:
+                    add_log("instagram", f"⚠️ direct_threads gagal: {e}", "warning")
+
+            # ---- HASIL ----
+            if not session_works:
+                self.client = None
+                self.is_logged_in = False
+                bot_state["instagram"]["is_logged_in"] = False
+
+                add_log("instagram", "❌ Session ID EXPIRED atau tidak valid!", "error")
+                return {
+                    "success": False,
+                    "message": (
+                        "❌ Session ID expired/tidak valid! "
+                        "Semua private API test gagal (login_required). "
+                        "Pastikan:\n"
+                        "1. Kamu masih login di browser (buka instagram.com, cek masih login)\n"
+                        "2. Copy ulang sessionid dari browser (mungkin sudah berubah)\n"
+                        "3. Jangan logout dari browser setelah copy sessionid"
+                    ),
+                }
+
+            # Session BENAR-BENAR works! Simpan settings
+            self._saved_settings = self.client.get_settings()
             self.is_logged_in = True
             bot_state["instagram"]["is_logged_in"] = True
             bot_state["instagram"]["username"] = real_username
 
-            add_log("instagram", f"✅ Login berhasil via Session ID! @{real_username}", "success")
-            return {"success": True, "message": f"Login berhasil! Welcome @{real_username}"}
+            add_log("instagram", f"✅ Login berhasil & TERVERIFIKASI! @{real_username}", "success")
+            return {"success": True, "message": f"Login berhasil & terverifikasi! Welcome @{real_username} ✅"}
 
         except Exception as e:
             error_msg = str(e)
             add_log("instagram", f"❌ Session ID gagal: {error_msg}", "error")
+            self.client = None
+            self.is_logged_in = False
+            bot_state["instagram"]["is_logged_in"] = False
             return {"success": False, "message": f"Session ID tidak valid: {error_msg}"}
 
     def _ensure_login(self) -> bool:
