@@ -314,7 +314,7 @@
                         <div class="log-container" id="workflowLog">
                             <div class="log-entry log-info">
                                 <span class="log-time">--:--:--</span>
-                                <span class="log-msg">Workflow siap dijalankan. Pastikan sudah login dan set API key.</span>
+                                <span class="log-msg">Workflow siap. 🧠 Smart Template aktif — bisa jalan TANPA API key!</span>
                             </div>
                         </div>
                     </div>
@@ -470,8 +470,8 @@
                     <div class="settings-grid">
                         <!-- API Key Setup -->
                         <div class="settings-card">
-                            <h3><i class="fas fa-key"></i> API Key Setup</h3>
-                            <p>Masukkan Gemini API Key untuk fitur AI comment generator</p>
+                            <h3><i class="fas fa-key"></i> API Key Setup (Opsional)</h3>
+                            <p>🧠 <strong>Smart Template</strong> sudah aktif tanpa API key! Tambahkan Gemini API Key untuk mode AI yang lebih canggih.</p>
                             <div class="form-group">
                                 <label>Google Gemini API Key</label>
                                 <div class="input-with-action">
@@ -578,16 +578,20 @@
         </div>
     </div>
 
-    <!-- MODAL: API Key Setup (First Time) -->
+    <!-- MODAL: API Key Setup (First Time) - OPSIONAL -->
     <div class="modal-overlay hidden" id="apiKeyModal">
         <div class="modal">
             <div class="modal-header">
-                <h3>🔑 Setup API Key</h3>
+                <h3>🔑 Setup API Key (Opsional)</h3>
                 <button class="modal-close" id="closeApiKeyModal">&times;</button>
             </div>
             <div class="modal-body">
                 <div class="setup-guide">
-                    <p>Untuk menggunakan fitur AI, kamu butuh <strong>Google Gemini API Key</strong> (GRATIS!):</p>
+                    <div style="background: linear-gradient(135deg, #7C3AED20, #EC489920); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+                        <p style="margin:0; font-weight:600;">🧠 Smart Template Mode sudah aktif!</p>
+                        <p style="margin:4px 0 0; font-size:0.9em; opacity:0.8;">Kamu bisa langsung auto comment tanpa API key. Sistem akan membaca caption dan memberikan komentar yang relevan.</p>
+                    </div>
+                    <p>Ingin komentar lebih canggih? Tambahkan <strong>Google Gemini API Key</strong> (GRATIS!):</p>
                     <ol>
                         <li>Buka <a href="https://aistudio.google.com/apikey" target="_blank">Google AI Studio</a></li>
                         <li>Login dengan akun Google</li>
@@ -599,6 +603,9 @@
                     </div>
                     <button class="btn-primary btn-glow btn-full" id="saveFirstTimeApiKey">
                         <i class="fas fa-rocket"></i> Aktifkan AI
+                    </button>
+                    <button class="btn-secondary btn-full" id="skipApiKeyBtn" style="margin-top: 8px;" onclick="document.getElementById('apiKeyModal').classList.add('hidden');">
+                        <i class="fas fa-forward"></i> Lewati — Pakai Smart Template
                     </button>
                 </div>
             </div>

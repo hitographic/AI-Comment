@@ -1,213 +1,408 @@
 """
 ==============================================
-🔥 GEN Z AUTO COMMENT GENERATOR 🔥
+🔥 SMART COMMENT GENERATOR v2.0 🔥
 ==============================================
-Module untuk generate komentar dengan gaya bahasa Gen Z
-yang gaul, kekinian, dan friendly.
+Generate komentar CERDAS berdasarkan isi postingan.
+Bisa jalan TANPA API Key (mode template pintar).
 
-Mendukung 2 mode:
-1. Template Mode - Menggunakan template komentar yang sudah disiapkan
-2. AI Mode - Menggunakan OpenAI GPT untuk generate komentar unik
+Mode:
+1. Smart Template - Analisis caption → generate komentar relevan
+2. AI Mode - Menggunakan OpenAI GPT (opsional, butuh API key)
 """
 
 import random
+import re
 import os
 from dotenv import load_dotenv
 
 load_dotenv()
 
 # =============================================
-# TEMPLATE KOMENTAR GEN Z 🔥
+# KEYWORD DETECTION PATTERNS
 # =============================================
 
-COMMENT_TEMPLATES = {
-    "pujian_umum": [
-        "Gila sih ini keren banget!! 🔥🔥",
-        "Aesthetic bgt deh, vibes nya dapet! ✨",
-        "Slay abis! Ga ada obat 💅",
-        "This is so fire bruh 🔥🤩",
-        "Kece parah, auto saved! 😍",
-        "Duh keren bgt, bikin iri aja 😭🔥",
-        "Literally the best thing I've seen today! 💯",
-        "No cap, ini bagus bgt sih 🫶",
-        "Vibe check: PASSED with flying colors ✅✨",
-        "Main character energy bgt ini mah 👑",
-        "Gaskeun terus bang/kak! Selalu keren 🚀",
-        "Wah ini sih next level bgt ya 🤯",
-        "Kontennya selalu beda, love it! 💕",
-        "Underrated bgt sih ini, deserve more! 📈",
-        "Bro this is elite content fr fr 🏆",
-    ],
-    "pujian_outfit": [
-        "Outfit nya on point bgt! 👗🔥",
-        "Drip check: 100/10 💧✨",
-        "Fashion icon sih ini mah 👑",
-        "Stylist nya siapa sih? Chef's kiss! 🤌",
-        "Ootd goals bgt!! Mau dong inspirasinya 😍",
-        "Slaying the fashion game as always 💅✨",
-        "Fit check nya selalu pass! 🔥",
-        "Warna nya match bgt, estetik parah! 🎨",
-        "Where did you get that?? Need info dong! 🛍️",
-        "Baju nya bagus bgt, auto checkout nih 🛒",
-    ],
-    "pujian_makanan": [
-        "Looks yummy bgt! Bikin laper 🤤🍽️",
-        "Food porn alert! 🚨 Ini enak bgt pasti 😋",
-        "Aduh jadi pengen, drop lokasi dong! 📍",
-        "Mukbang vibes! Bikin ngiler parah 🤤",
-        "Kuliner explorer sejati! Auto save buat reference 📌",
-        "This looks absolutely bussin no cap 🔥🍔",
-        "Porsinya mantep bgt, worth it ga? 💰",
-        "Menu baru ya? Wajib coba sih ini 📝",
-        "Rating berapa nih? Kayaknya enak bgt! ⭐",
-        "Comfort food goals bgt sih ini 🫶",
-    ],
-    "pujian_travel": [
-        "Tempatnya aesthetic bgt! Drop lokasi dong 📍✨",
-        "Wanderlust vibes bgt! Jadi pengen healing 🌴",
-        "View nya gila sih, surga dunia! 🏔️😍",
-        "Bucket list updated! Wajib kesana 📝🗺️",
-        "Living the dream bgt sih 🌅✨",
-        "Healing goals! Kapan bisa kesana ya 😭",
-        "Paradise found! Ini dimana sih?? 🏖️",
-        "Foto nya kayak wallpaper, cakep bgt! 📸",
-        "Nature therapy at its finest 🌿💚",
-        "Pengen banget kesana, tips dong! 🙏",
-    ],
-    "supportive": [
-        "Keep going! Selalu support kamu 🫶💪",
-        "You got this bestie! 💕",
-        "Proud of you! Terus berkarya ya ✨",
-        "Semangat terus! Kontennya selalu inspiring 💫",
-        "Real ones support real ones 🤝🔥",
-        "We love a hardworking queen/king! 👑",
-        "Growth nya amazing bgt! 📈✨",
-        "Konsisten terus ya, pasti makin sukses! 🚀",
-        "Dedication level: OVER 9000 💯🔥",
-        "Manifesting more success buat kamu! 🙏✨",
-    ],
-    "lucu": [
-        "WKWKWK ini relate bgt sih 😂💀",
-        "Ngakak parah, hampir keselek 🤣🤣",
-        "Bruh moment bgt ini 💀😂",
-        "LMAOOO literally me everyday 😭🤣",
-        "Comedy gold! Stand up comedian when? 🎤😂",
-        "Aku di rumah: exactly like this 💀😂",
-        "Tag temen yang kayak gini 😂👇",
-        "POV: me seeing this for the 100th time 🔄😂",
-        "Living rent free in my head 🏠😂",
-        "Ini sih meme material bgt 💀🔥",
-    ],
-    "engagement_boost": [
-        "Setuju bgt! Menurut kalian gimana? 👇",
-        "Ini sih facts, no debate! 📢",
-        "Share ke temen kalian yang butuh liat ini! 📤",
-        "Siapa yang relate? Angkat tangan! 🙋‍♂️",
-        "Drop emoji favorit kalian di bawah! 👇",
-        "Rate 1-10? Menurutku 11 sih! 💯",
-        "Bookmark dulu, ntar dipraktekin! 📌",
-        "Noted! Makasih banget info nya 📝🙏",
-        "Wajib FYP sih ini! 🚀",
-        "Algorithm, do your thing! 🤖✨",
-    ],
+CONTENT_PATTERNS = {
+    "makanan": {
+        "keywords": [
+            "makan", "food", "kuliner", "resep", "recipe", "masak", "cook",
+            "enak", "yummy", "delicious", "lezat", "nasi", "mie", "ayam",
+            "sate", "bakso", "rendang", "sambal", "pedas", "manis", "gurih",
+            "resto", "restaurant", "cafe", "kopi", "coffee", "dessert",
+            "cake", "roti", "bread", "pizza", "burger", "sushi", "ramen",
+            "noodle", "seafood", "ikan", "udang", "mukbang", "foodie",
+            "jajanan", "snack", "cemilan", "breakfast", "lunch", "dinner",
+            "sarapan", "warung", "street food", "homemade", "indomie",
+            "boba", "thai tea", "matcha", "coklat", "ice cream", "es krim",
+        ],
+        "templates": [
+            "Wah keliatan enak bgt! Bikin laper aja nih 🤤🔥",
+            "Looks so yummy! Auto ngiler parah 😋✨",
+            "Food goals bgt sih ini! Drop lokasi dong 📍",
+            "Duh jadi pengen makan ini juga 🤤💕",
+            "Porsinya mantep! Worth it ga nih? 💰🔥",
+            "Kuliner explorer sejati! Auto save buat reference 📌",
+            "Ini sih wajib cobain, looks bussin fr fr 🔥😍",
+            "Menu baru ya? Tampilannya menggoda bgt! ⭐",
+            "Comfort food goals bgt sih ini 🫶✨",
+            "Bikin laper tengah malem aja deh 😭🤤",
+            "Rating 10/10 pasti ini mah! 💯🍽️",
+            "Aesthetik bgt plating nya! Chef's kiss 🤌✨",
+            "Waduh ini sih bikin kalap, pengen semua 😍🔥",
+            "Bagi resepnya dong! Pengen bikin juga 📝",
+            "This is literally food heaven! 😇🍕",
+        ],
+    },
+    "travel": {
+        "keywords": [
+            "travel", "jalan", "trip", "vacation", "liburan", "holiday",
+            "pantai", "beach", "gunung", "mountain", "hiking", "camping",
+            "hotel", "resort", "villa", "staycation", "explore", "adventure",
+            "sunset", "sunrise", "view", "pemandangan", "landscape",
+            "wanderlust", "healing", "bali", "lombok", "raja ampat",
+            "yogya", "bandung", "bromo", "danau", "air terjun", "waterfall",
+            "flight", "airport", "road trip", "diving", "snorkeling",
+            "surfing", "island", "pulau", "tropical",
+        ],
+        "templates": [
+            "Tempatnya aesthetic bgt! Pengen kesana juga 📍✨",
+            "Wanderlust vibes! Jadi pengen healing juga nih 🌴😍",
+            "View nya gila sih, surga dunia! 🏔️🔥",
+            "Bucket list updated! Wajib kesana someday 📝🗺️",
+            "Living the dream bgt sih! Jealous 🌅✨",
+            "Healing goals bgt! Kapan bisa kesana ya 😭💕",
+            "Paradise found! Drop tips dong buat kesana 🏖️",
+            "Foto nya kayak wallpaper, cakep bgt! 📸🔥",
+            "Nature therapy at its finest! 🌿💚",
+            "Pengen bgt kesana, worth it ga trip nya? 🙏",
+            "Vibes nya healing bgt, auto recharge! ⚡🌴",
+            "Ini dimana sih?? Cakep bgt tempatnya 😍📍",
+            "Travel goals! Ajak-ajak dong next trip 🧳✨",
+            "The view is breathtaking fr fr 🤩🏔️",
+            "Pengen escape ke sini juga deh 🌊💙",
+        ],
+    },
+    "fashion": {
+        "keywords": [
+            "outfit", "fashion", "ootd", "style", "baju", "dress",
+            "hijab", "sepatu", "shoes", "sneakers", "tas", "bag",
+            "accessories", "jewelry", "makeup", "skincare", "beauty",
+            "stylish", "trendy", "vintage", "streetwear", "casual",
+            "elegant", "branded", "thrift", "shopping", "belanja",
+            "mix and match", "lookbook", "wardrobe", "collection",
+        ],
+        "templates": [
+            "Outfit nya on point bgt! 🔥👗",
+            "Drip check: 100/10! Slay abis 💧✨",
+            "Fashion icon sih ini mah! 👑💅",
+            "Stylist nya siapa sih? Chef's kiss 🤌✨",
+            "OOTD goals bgt! Mau dong inspirasinya 😍",
+            "Slaying the fashion game as always! 💅🔥",
+            "Fit check nya selalu pass! 🔥✨",
+            "Warna nya match bgt, estetik parah! 🎨",
+            "Style goals! Where did you get that? 🛍️",
+            "Mix n match nya bisa aja, kece bgt! 👏✨",
+            "Ga pernah salah outfit deh, selalu on point! 💯",
+            "Ini sih fashion inspo bgt ya 😍🔥",
+            "Detail nya bagus bgt, tasteful! ✨👌",
+            "Auto screenshot buat referensi outfit 📸💕",
+        ],
+    },
+    "selfie": {
+        "keywords": [
+            "selfie", "mirror", "foto", "photo", "pose", "glow up",
+            "glowing", "cantik", "beautiful", "pretty", "handsome",
+            "ganteng", "cute", "lucu", "imut", "gorgeous", "stunning",
+            "smile", "senyum", "happy", "confidence", "self love",
+        ],
+        "templates": [
+            "Glowing bgt! Skincare routine nya apa sih? ✨😍",
+            "Cantik/ganteng parah, ga ada obat! 🔥💕",
+            "Main character energy bgt! 👑✨",
+            "Slay queen/king! Always looking fire 💅🔥",
+            "Self love vibes! Love to see it 🫶💕",
+            "The confidence is radiating! You look amazing ✨",
+            "Drop the skincare routine bestie! 😭✨",
+            "Photogenic bgt sih, ga ada angle jelek! 📸🔥",
+            "Vibes nya chill bgt, love it! 😍✨",
+            "Looking fresh as always! Never miss 🌟",
+            "Udah kayak model sih ini mah! 💃🔥",
+            "Aura nya terpancar bgt sih 😍👑",
+            "Ga perlu filter, natural beauty! ✨🫶",
+        ],
+    },
+    "motivasi": {
+        "keywords": [
+            "motivasi", "motivation", "semangat", "sukses", "success",
+            "inspirasi", "inspiration", "dream", "mimpi", "goal",
+            "hustle", "grind", "work hard", "kerja keras", "never give up",
+            "belajar", "learn", "growth", "mindset", "positive",
+            "grateful", "bersyukur", "blessed", "achievement", "prestasi",
+            "bismillah", "alhamdulillah", "doa", "believe", "percaya",
+            "struggle", "discipline", "konsisten", "focus", "progress",
+        ],
+        "templates": [
+            "Semangat terus! You got this 💪🔥",
+            "Inspiring bgt! Keep going bestie ✨💕",
+            "Real talk sih ini, needed to hear this 🙏",
+            "Proud of you! Terus berkarya ya 👑✨",
+            "Dedication level: OVER 9000! 💯🔥",
+            "Manifesting more success buat kamu! 🙏✨",
+            "Growth mindset! Love to see the progress 📈💪",
+            "This hits different, so real! 🔥🫶",
+            "Konsisten terus ya, pasti makin sukses! 🚀",
+            "We love a hardworking person! 👏✨",
+            "Setuju bgt! Mindset is everything 🧠🔥",
+            "Aamiin! Semoga makin berkah ya ✨🤲",
+            "Note to self sih ini! 📝🔥",
+        ],
+    },
+    "lucu": {
+        "keywords": [
+            "wkwk", "haha", "hihi", "ngakak", "lucu", "funny",
+            "meme", "jokes", "humor", "comedy", "receh", "kocak",
+            "gokil", "absurd", "relate", "relatable", "lol", "lmao",
+            "bruh", "drama", "savage", "prank", "challenge", "trend",
+        ],
+        "templates": [
+            "WKWKWK ini relate bgt sih 😂💀",
+            "Ngakak parah! Hampir keselek 🤣🔥",
+            "Bruh moment bgt ini! 💀😂",
+            "LMAOOO literally me everyday 😭🤣",
+            "Comedy gold! Stand up comedian when? 🎤😂",
+            "Tag temen yang kayak gini! 😂👇",
+            "POV: me seeing this for the 100th time 🔄😂",
+            "Living rent free in my head! 🏠😂",
+            "Ini sih meme material bgt 💀🔥",
+            "Receh tapi bikin ngakak bgt 🤣✨",
+            "Content creator of the year sih 🏆😂",
+        ],
+    },
+    "musik": {
+        "keywords": [
+            "musik", "music", "lagu", "song", "sing", "nyanyi",
+            "cover", "guitar", "gitar", "piano", "drum", "band",
+            "concert", "konser", "spotify", "playlist", "album",
+            "vocal", "suara", "voice", "melody", "beat",
+            "karaoke", "duet", "perform", "rap", "pop", "rock",
+            "indie", "acoustic", "live", "studio", "recording",
+        ],
+        "templates": [
+            "Suaranya bagus bgt! Enak didengar 🎵😍",
+            "Talent! Auto replay ini sih 🔁🔥",
+            "Merinding dengernya, goosebumps! 🫠✨",
+            "Drop full version dong! Penasaran 🎶",
+            "Playlist material bgt ini! 🎧🔥",
+            "Vocal nya keren bgt, auto subscribe! 📢✨",
+            "This is a bop! Can't stop listening 🎵💕",
+            "Aransemen nya unik bgt, love it! 🎸🔥",
+            "Spotify when?? Pengen save di playlist! 🎧",
+            "Eargasm bgt dengerin ini! 🤩🎵",
+            "Live performance nya keren parah! 🎤🔥",
+        ],
+    },
+    "olahraga": {
+        "keywords": [
+            "gym", "workout", "fitness", "olahraga", "sport", "lari",
+            "run", "jogging", "exercise", "diet", "healthy", "sehat",
+            "body goals", "muscle", "otot", "training", "latihan",
+            "basketball", "football", "futsal", "badminton", "swimming",
+            "yoga", "pilates", "boxing", "marathon", "cycling", "sepeda",
+        ],
+        "templates": [
+            "Body goals bgt! Workout routine nya apa? 💪🔥",
+            "Dedication! Semangat terus gym nya 🏋️✨",
+            "Goals bgt sih, konsisten ya! 💪😍",
+            "Atletis bgt! Keep grinding 🔥🏃",
+            "Healthy lifestyle goals! Inspiring 🌿💪",
+            "Form nya bagus bgt, proper! 👏🔥",
+            "Beast mode activated! 💪🔥🔥",
+            "Semangat terus! No pain no gain 🏋️✨",
+            "Progress nya kelihatan bgt, proud! 📈💪",
+            "Jadi ikut termotivasi nih! 🔥💪",
+        ],
+    },
+    "bisnis": {
+        "keywords": [
+            "bisnis", "business", "usaha", "jualan", "promo", "diskon",
+            "sale", "harga", "order", "beli", "produk", "brand",
+            "launching", "opening", "entrepreneur", "startup", "umkm",
+            "marketing", "online shop", "olshop", "testimoni", "best seller",
+        ],
+        "templates": [
+            "Wah keren bgt produknya! Sukses terus ya 🚀🔥",
+            "Mantap! Semoga makin laris ya 📈✨",
+            "Produknya bagus bgt, auto checkout! 🛒💕",
+            "Support local business! Semangat 💪🔥",
+            "Quality nya keliatan bagus bgt! ⭐✨",
+            "Seriusan bagus bgt ini, recommended! 💯",
+            "Auto save buat nanti order! 📌🔥",
+            "Keep up the good work! Makin sukses ya 🚀",
+            "Packaging nya aesthetic bgt! 😍📦",
+        ],
+    },
+    "pet": {
+        "keywords": [
+            "kucing", "cat", "anjing", "dog", "puppy", "kitten",
+            "pet", "hewan", "animal", "peliharaan", "meong",
+            "hamster", "kelinci", "burung", "anabul", "fur baby",
+        ],
+        "templates": [
+            "GEMESH BGT! Pengen peluk 🥹💕",
+            "Anabul nya lucu bgt! Nama nya siapa? 😍🐾",
+            "Fur baby goals! So cute 🤗💕",
+            "Duh ga kuat liat yang lucu-lucu 😭💕",
+            "Pet parent of the year! 🏆🐾",
+            "Menggemaskan parah! Auto senyum liat ini 😊💕",
+            "Tingkah nya lucu bgt, healing! 🥹✨",
+            "Kayak boneka hidup! Cute overload 🧸💕",
+            "Bikin pengen punya juga! 😭🐾",
+        ],
+    },
+    "pujian_umum": {
+        "keywords": [],
+        "templates": [
+            "Gila sih ini keren bgt!! 🔥🔥",
+            "Aesthetic bgt, vibes nya dapet! ✨😍",
+            "Slay abis! Ga ada obat 💅🔥",
+            "This is so fire bruh 🔥🤩",
+            "Kece parah, auto saved! 😍📌",
+            "Literally the best thing I've seen today! 💯",
+            "No cap, ini bagus bgt sih 🫶✨",
+            "Main character energy bgt ini mah 👑🔥",
+            "Gaskeun terus! Selalu keren 🚀✨",
+            "Wah ini sih next level bgt ya 🤯🔥",
+            "Kontennya selalu beda, love it! 💕",
+            "Underrated bgt, deserve more! 📈",
+            "Elite content fr fr 🏆🔥",
+            "Selalu konsisten bagus deh! 👏✨",
+            "Never disappoints! Always on top 🔝🔥",
+            "Creative bgt, out of the box! 🎨🔥",
+            "Top tier content as always! 👑💯",
+        ],
+    },
+    "supportive": {
+        "keywords": [],
+        "templates": [
+            "Keep going! Selalu support kamu 🫶💪",
+            "You got this bestie! 💕✨",
+            "Proud of you! Terus berkarya ya 👑",
+            "Semangat terus! Kontennya selalu inspiring 💫",
+            "Real ones support real ones 🤝🔥",
+            "Growth nya amazing bgt! 📈✨",
+            "Konsisten terus ya, pasti makin sukses! 🚀",
+            "Dedication level: OVER 9000 💯🔥",
+            "Manifesting more success buat kamu! 🙏✨",
+        ],
+    },
+    "engagement_boost": {
+        "keywords": [],
+        "templates": [
+            "Setuju bgt! Menurut kalian gimana? 👇",
+            "Ini sih facts, no debate! 📢🔥",
+            "Share ke temen kalian yang butuh liat ini! 📤",
+            "Rate 1-10? Menurutku 11 sih! 💯",
+            "Bookmark dulu, ntar dipraktekin! 📌",
+            "Noted! Makasih bgt info nya 📝🙏",
+            "Wajib FYP sih ini! 🚀🔥",
+            "Algorithm, do your thing! 🤖✨",
+        ],
+    },
 }
 
-# Emoji yang sering dipakai Gen Z
 GENZ_EMOJIS = [
     "🔥", "✨", "💅", "🫶", "💀", "😭", "🤩", "💯", "👑", "🚀",
     "😍", "🤌", "💕", "📈", "🏆", "⭐", "🎯", "💫", "🌟", "😂",
-    "🤣", "💖", "🫠", "🥹", "🤝", "👏", "🙌", "💪", "🎉", "🎊",
-]
-
-# Slang Gen Z
-GENZ_PREFIXES = [
-    "Ngl", "Fr fr", "No cap", "Lowkey", "Highkey", "Literally",
-    "Bestie", "Slay", "Periodt", "Bruh", "Sis", "Bro",
-    "Duh", "Gila", "Anjir", "Wah", "Goks", "Mantep",
-]
-
-GENZ_SUFFIXES = [
-    "sih!", "bgt!", "parah!", "banget!", "dong!", "lah!",
-    "fr fr!", "no cap!", "periodt!", "sis!", "bestie!",
-    "goks!", "cuy!", "woi!", "ges!", "gaes!",
 ]
 
 
-def get_template_comment(category: str = None) -> str:
+def detect_content_type(caption: str) -> str:
     """
-    Generate komentar dari template yang sudah disiapkan.
-
-    Args:
-        category: Kategori komentar (pujian_umum, pujian_outfit, dll)
-                 Jika None, akan random dari semua kategori.
-
-    Returns:
-        String komentar Gen Z
+    Analisis caption untuk mendeteksi tipe konten.
+    Return kategori yang paling cocok berdasarkan keyword matching.
     """
-    if category and category in COMMENT_TEMPLATES:
-        comments = COMMENT_TEMPLATES[category]
+    if not caption:
+        return "pujian_umum"
+
+    caption_lower = caption.lower()
+    scores = {}
+
+    for category, data in CONTENT_PATTERNS.items():
+        if not data["keywords"]:
+            continue
+        score = 0
+        for keyword in data["keywords"]:
+            if keyword.lower() in caption_lower:
+                score += 1
+                if len(keyword) > 5:
+                    score += 0.5
+        if score > 0:
+            scores[category] = score
+
+    if not scores:
+        return random.choice(["pujian_umum", "supportive", "engagement_boost"])
+
+    return max(scores, key=scores.get)
+
+
+def smart_template_comment(caption: str = "", post_type: str = None) -> str:
+    """
+    Generate komentar CERDAS berdasarkan analisis caption.
+    TIDAK memerlukan API key.
+    """
+    if post_type and post_type in CONTENT_PATTERNS:
+        category = post_type
     else:
-        # Random dari semua kategori
-        all_comments = []
-        for cat_comments in COMMENT_TEMPLATES.values():
-            all_comments.extend(cat_comments)
-        comments = all_comments
+        category = detect_content_type(caption)
 
-    comment = random.choice(comments)
+    templates = CONTENT_PATTERNS[category]["templates"]
+    comment = random.choice(templates)
 
-    # 30% chance menambah emoji extra
-    if random.random() < 0.3:
-        extra_emoji = random.choice(GENZ_EMOJIS)
-        comment += f" {extra_emoji}"
+    # 20% chance variasi prefix
+    if random.random() < 0.2 and not comment.startswith(("Wah", "Duh", "Gila")):
+        prefix = random.choice(["Wah ", "Duh ", "Gila sih "])
+        comment = prefix + comment[0].lower() + comment[1:]
+
+    # 15% chance emoji extra
+    if random.random() < 0.15:
+        comment += f" {random.choice(GENZ_EMOJIS)}"
 
     return comment
 
 
+def get_template_comment(category: str = None) -> str:
+    """Generate komentar dari template (backward compatible)."""
+    if category and category in CONTENT_PATTERNS:
+        templates = CONTENT_PATTERNS[category]["templates"]
+    else:
+        all_comments = []
+        for cat_data in CONTENT_PATTERNS.values():
+            all_comments.extend(cat_data["templates"])
+        templates = all_comments
+
+    comment = random.choice(templates)
+    if random.random() < 0.3:
+        comment += f" {random.choice(GENZ_EMOJIS)}"
+    return comment
+
+
 def get_ai_comment(post_caption: str = "", post_type: str = "general") -> str:
-    """
-    Generate komentar menggunakan OpenAI GPT dengan gaya Gen Z.
-
-    Args:
-        post_caption: Caption dari postingan
-        post_type: Tipe postingan (general, food, travel, fashion, funny, motivational)
-
-    Returns:
-        String komentar Gen Z dari AI
-    """
+    """Generate komentar via OpenAI GPT. Fallback ke smart template jika gagal."""
     try:
         from openai import OpenAI
 
         api_key = os.getenv("OPENAI_API_KEY", "")
         if not api_key or api_key.startswith("sk-your"):
-            # Fallback ke template jika API key belum diset
-            return get_template_comment()
+            return smart_template_comment(post_caption, post_type)
 
         client = OpenAI(api_key=api_key)
-
         system_prompt = """Kamu adalah Gen Z Indonesia yang gaul dan friendly. 
-Tugasmu adalah membuat komentar singkat untuk postingan social media (Instagram/TikTok).
-
-RULES:
-- Gunakan bahasa campuran Indonesia dan English (Jaksel style)
-- Pakai slang Gen Z: slay, vibes, aesthetic, no cap, fr fr, lowkey, bestie, dll
-- Tambahkan emoji yang relevan (2-4 emoji)
-- Komentar harus POSITIF dan SUPPORTIVE
-- Maksimal 1-2 kalimat saja
-- Jangan terlalu formal
-- Jangan pakai hashtag
-- Variasi setiap komentar, jangan repetitif
-- Sesekali pakai singkatan: bgt, bsk, gpp, dll
-
-CONTOH KOMENTAR:
-- "Gila sih ini keren bgt! Vibes nya dapet 🔥✨"
-- "Slay abis bestie! Auto saved 💅😍"
-- "No cap this is the best thing I've seen today 💯🔥"
-- "Aesthetic parah, living the dream bgt sih ✨🌴"
-"""
+Buat komentar singkat untuk postingan social media. 
+Campur Indonesia-English (Jaksel style). Pakai 2-4 emoji. Positif & supportive.
+Maksimal 1-2 kalimat. Jangan formal. Jangan pakai hashtag."""
 
         user_prompt = f"Buatkan 1 komentar Gen Z untuk postingan {post_type}."
         if post_caption:
-            user_prompt += f"\nCaption postingan: {post_caption}"
+            user_prompt += f"\nCaption: {post_caption}"
 
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
@@ -218,15 +413,11 @@ CONTOH KOMENTAR:
             max_tokens=100,
             temperature=0.9,
         )
-
-        comment = response.choices[0].message.content.strip()
-        # Hapus tanda kutip jika ada
-        comment = comment.strip('"').strip("'")
+        comment = response.choices[0].message.content.strip().strip('"').strip("'")
         return comment
-
     except Exception as e:
-        print(f"⚠️ AI Error: {e}, falling back to template")
-        return get_template_comment()
+        print(f"⚠️ AI Error: {e}, falling back to smart template")
+        return smart_template_comment(post_caption)
 
 
 def generate_comment(
@@ -236,53 +427,62 @@ def generate_comment(
     post_type: str = "general",
 ) -> str:
     """
-    Generate komentar berdasarkan mode yang dipilih.
-
-    Args:
-        mode: 'template' atau 'ai'
-        category: Kategori untuk template mode
-        post_caption: Caption postingan untuk AI mode
-        post_type: Tipe postingan untuk AI mode
-
-    Returns:
-        String komentar Gen Z
+    Generate komentar. Default mode 'template' menggunakan SMART template
+    yang menganalisis caption otomatis.
     """
     if mode == "ai":
         return get_ai_comment(post_caption, post_type)
     else:
-        return get_template_comment(category)
+        if post_caption:
+            return smart_template_comment(post_caption, post_type)
+        elif category:
+            return get_template_comment(category)
+        else:
+            return get_template_comment()
 
 
 def get_categories() -> list:
-    """Return daftar kategori komentar yang tersedia."""
-    return list(COMMENT_TEMPLATES.keys())
+    """Return daftar kategori komentar."""
+    return list(CONTENT_PATTERNS.keys())
 
 
 def get_template_count() -> int:
     """Return total jumlah template komentar."""
-    total = 0
-    for comments in COMMENT_TEMPLATES.values():
-        total += len(comments)
-    return total
+    return sum(len(d["templates"]) for d in CONTENT_PATTERNS.values())
 
 
-# Test
+def analyze_caption(caption: str) -> dict:
+    """Analisis caption dan return info detail."""
+    category = detect_content_type(caption)
+    comment = smart_template_comment(caption)
+    return {
+        "detected_category": category,
+        "caption_preview": caption[:100] + ("..." if len(caption) > 100 else ""),
+        "suggested_comment": comment,
+    }
+
+
 if __name__ == "__main__":
     print("=" * 50)
-    print("🔥 GEN Z COMMENT GENERATOR TEST 🔥")
+    print("🔥 SMART COMMENT GENERATOR v2.0 TEST 🔥")
     print("=" * 50)
-
     print(f"\n📊 Total template: {get_template_count()} komentar")
     print(f"📁 Kategori: {', '.join(get_categories())}")
 
-    print("\n--- Template Mode ---")
-    for i in range(5):
-        print(f"  {i+1}. {get_template_comment()}")
+    test_captions = [
+        "Nasi goreng spesial buatan mama 🍳 enak bgt!",
+        "Morning run 5km done! 💪",
+        "Sunset di Bali kemarin, healing bgt 🌅",
+        "OOTD hari ini, mix and match vintage style ✨",
+        "Kucing gue lagi tidur, gemesh bgt 😭",
+        "Alhamdulillah target tercapai tahun ini 🙏",
+        "WKWKWK gue banget sih ini 😂",
+        "",
+    ]
 
-    print("\n--- Category: lucu ---")
-    for i in range(3):
-        print(f"  {i+1}. {get_template_comment('lucu')}")
-
-    print("\n--- AI Mode (butuh API key) ---")
-    comment = generate_comment(mode="ai", post_type="food")
-    print(f"  1. {comment}")
+    print("\n--- Smart Template Mode (TANPA API) ---")
+    for caption in test_captions:
+        result = analyze_caption(caption)
+        print(f"\n  Caption: '{caption}'")
+        print(f"  Detected: {result['detected_category']}")
+        print(f"  Comment: {result['suggested_comment']}")
