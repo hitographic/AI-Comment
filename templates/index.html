@@ -1221,9 +1221,10 @@
                         <p class="section-subtitle">Atur gaya komentar bot</p>
 
                         <label class="form-label small text-muted">Mode Komentar</label>
-                        <select class="form-select select-custom mb-3" id="set-comment-mode">
-                            <option value="template">📝 Template</option>
-                            <option value="ai">🤖 AI (OpenAI)</option>
+                        <select class="form-select select-custom mb-3" id="set-comment-mode" onchange="onCommentModeChange()">
+                            <option value="template">📝 Smart Template (Tanpa API)</option>
+                            <option value="gemini">🤖 Gemini AI (GRATIS!)</option>
+                            <option value="ai">💎 OpenAI GPT (Berbayar)</option>
                         </select>
 
                         <label class="form-label small text-muted">Kategori Aktif</label>
@@ -1252,6 +1253,19 @@
                                 <span class="toggle-slider"></span>
                             </label>
                         </div>
+
+                        <hr style="border-color: var(--border); margin: 15px 0;">
+
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="fw-bold" style="font-size: 0.9rem;">🚫 Tanpa Emoticon</span>
+                                <br><small class="text-muted">Komentar tanpa emoji/emoticon</small>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="set-no-emoji">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
                     </div>
                 </div>
 
@@ -1260,18 +1274,46 @@
                         <h6 class="section-title">🔑 API Configuration</h6>
                         <p class="section-subtitle">Konfigurasi API key untuk fitur AI</p>
 
-                        <label class="form-label small text-muted">OpenAI API Key (untuk mode AI)</label>
-                        <div class="row g-2">
-                            <div class="col-md-10">
-                                <input type="password" class="form-control input-custom" id="set-openai-key" placeholder="sk-...">
+                        <!-- Gemini API Key (GRATIS) -->
+                        <div id="gemini-key-section">
+                            <label class="form-label small text-muted">
+                                <span class="badge bg-success me-1">GRATIS</span> Google Gemini API Key
+                            </label>
+                            <div class="row g-2 mb-2">
+                                <div class="col-md-10">
+                                    <input type="password" class="form-control input-custom" id="set-gemini-key" placeholder="AIza...">
+                                </div>
+                                <div class="col-md-2">
+                                    <button class="btn btn-outline-custom w-100" onclick="testGeminiKey()">
+                                        <i class="fas fa-check me-1"></i> Test
+                                    </button>
+                                </div>
                             </div>
-                            <div class="col-md-2">
-                                <button class="btn btn-outline-custom w-100" onclick="testApiKey()">
-                                    <i class="fas fa-check me-1"></i> Test
-                                </button>
+                            <small class="text-muted d-block mb-1">
+                                Dapatkan API key GRATIS di 
+                                <a href="https://aistudio.google.com/apikey" target="_blank" style="color: var(--accent-purple);">aistudio.google.com/apikey</a>
+                            </small>
+                            <div class="alert mb-3" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 10px; color: #10b981; font-size: 0.8rem;">
+                                <i class="fas fa-gift me-1"></i>
+                                <strong>100% GRATIS!</strong> 1500 request/hari, komentar AI cerdas & kontekstual. Recommended!
                             </div>
                         </div>
-                        <small class="text-muted mt-1 d-block">Dapatkan API key di <a href="https://platform.openai.com" target="_blank" style="color: var(--accent-purple);">platform.openai.com</a></small>
+
+                        <!-- OpenAI API Key (Berbayar) -->
+                        <div id="openai-key-section">
+                            <label class="form-label small text-muted">OpenAI API Key (untuk mode AI berbayar)</label>
+                            <div class="row g-2">
+                                <div class="col-md-10">
+                                    <input type="password" class="form-control input-custom" id="set-openai-key" placeholder="sk-...">
+                                </div>
+                                <div class="col-md-2">
+                                    <button class="btn btn-outline-custom w-100" onclick="testApiKey()">
+                                        <i class="fas fa-check me-1"></i> Test
+                                    </button>
+                                </div>
+                            </div>
+                            <small class="text-muted mt-1 d-block">Dapatkan API key di <a href="https://platform.openai.com" target="_blank" style="color: var(--accent-purple);">platform.openai.com</a></small>
+                        </div>
                     </div>
                 </div>
 
@@ -1892,9 +1934,11 @@
                 interval_max: parseInt(document.getElementById('set-interval-max').value),
                 max_per_day: parseInt(document.getElementById('set-max-per-day').value),
                 comment_mode: document.getElementById('set-comment-mode').value,
+                gemini_api_key: document.getElementById('set-gemini-key').value,
                 categories: activeCategories,
                 auto_like: document.getElementById('set-auto-like').checked,
                 auto_follow: document.getElementById('set-auto-follow').checked,
+                use_emoji: !document.getElementById('set-no-emoji').checked,
             };
 
             fetch(`${API_BASE}/api/settings`, {
@@ -1914,6 +1958,54 @@
         function testApiKey() {
             showToast('Testing API key... (fitur ini memerlukan server)', 'info');
         }
+
+        function testGeminiKey() {
+            const key = document.getElementById('set-gemini-key').value;
+            if (!key) {
+                showToast('Masukkan Gemini API key dulu!', 'error');
+                return;
+            }
+            showToast('Testing Gemini API key...', 'info');
+            fetch(`${API_BASE}/api/test-gemini`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ api_key: key })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(`✅ Gemini API key valid! Test: "${data.comment}"`, 'success');
+                } else {
+                    showToast(`❌ Gemini API key gagal: ${data.error}`, 'error');
+                }
+            })
+            .catch(() => {
+                showToast('Error testing Gemini key. Pastikan server berjalan!', 'error');
+            });
+        }
+
+        function onCommentModeChange() {
+            const mode = document.getElementById('set-comment-mode').value;
+            const geminiSection = document.getElementById('gemini-key-section');
+            const openaiSection = document.getElementById('openai-key-section');
+            
+            if (mode === 'gemini') {
+                geminiSection.style.display = 'block';
+                openaiSection.style.display = 'none';
+            } else if (mode === 'ai') {
+                geminiSection.style.display = 'none';
+                openaiSection.style.display = 'block';
+            } else {
+                // template mode - show both but collapsed
+                geminiSection.style.display = 'block';
+                openaiSection.style.display = 'block';
+            }
+        }
+
+        // Initial mode check
+        document.addEventListener('DOMContentLoaded', () => {
+            onCommentModeChange();
+        });
 
         // =============================================
         // LOG

@@ -36,6 +36,7 @@ from comment_generator import (
     analyze_caption,
     get_categories,
     get_template_count,
+    get_gemini_comment,
 )
 
 load_dotenv()
@@ -78,6 +79,8 @@ bot_state = {
     },
     "settings": {
         "comment_mode": os.getenv("COMMENT_MODE", "template"),
+        "gemini_api_key": os.getenv("GEMINI_API_KEY", ""),
+        "use_emoji": True,
         "interval_min": int(os.getenv("COMMENT_INTERVAL_MIN", 30)),
         "interval_max": int(os.getenv("COMMENT_INTERVAL_MAX", 120)),
         "max_per_day": int(os.getenv("MAX_COMMENTS_PER_DAY", 50)),
@@ -534,6 +537,8 @@ class InstagramBot:
                 mode=settings["comment_mode"],
                 post_caption=caption,
                 post_type=detected,
+                gemini_api_key=settings.get("gemini_api_key", ""),
+                use_emoji=settings.get("use_emoji", True),
             )
             add_log("instagram", f"   💬 Komentar: \"{comment}\"", "info")
 
@@ -620,6 +625,8 @@ class InstagramBot:
                         mode=settings["comment_mode"],
                         post_caption=caption,
                         post_type=detect_content_type(caption),
+                        gemini_api_key=settings.get("gemini_api_key", ""),
+                        use_emoji=settings.get("use_emoji", True),
                     )
 
                     media_id = post.id if hasattr(post, "id") else post.pk
@@ -723,6 +730,8 @@ class TikTokBot:
                     comment = generate_comment(
                         mode=settings["comment_mode"],
                         post_caption=f"TikTok video about #{hashtag}",
+                        gemini_api_key=settings.get("gemini_api_key", ""),
+                        use_emoji=settings.get("use_emoji", True),
                     )
 
                     self.comment_on_video(f"https://tiktok.com/tag/{hashtag}", comment)
@@ -972,6 +981,10 @@ def update_settings():
 
     if "comment_mode" in data:
         settings["comment_mode"] = data["comment_mode"]
+    if "gemini_api_key" in data:
+        settings["gemini_api_key"] = data["gemini_api_key"]
+    if "use_emoji" in data:
+        settings["use_emoji"] = data["use_emoji"]
     if "interval_min" in data:
         settings["interval_min"] = int(data["interval_min"])
     if "interval_max" in data:
@@ -988,6 +1001,31 @@ def update_settings():
     return jsonify({"success": True, "settings": settings})
 
 
+# --- Gemini Test Route ---
+@app.route("/api/test-gemini", methods=["POST"])
+def test_gemini_key():
+    """Test Gemini API key dengan generate komentar sample."""
+    data = request.json or {}
+    api_key = data.get("api_key", "")
+
+    if not api_key:
+        return jsonify({"success": False, "error": "API key kosong"})
+
+    try:
+        comment = get_gemini_comment(
+            post_caption="Testing API key - beautiful sunset at Bali 🌅",
+            post_type="travel",
+            api_key=api_key,
+        )
+        # Cek apakah itu hasil template (berarti Gemini gagal)
+        if comment and len(comment) > 0:
+            return jsonify({"success": True, "comment": comment})
+        else:
+            return jsonify({"success": False, "error": "Gemini tidak menghasilkan komentar"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
 # --- Comment Generator Routes ---
 @app.route("/api/generate-comment", methods=["POST"])
 def api_generate_comment():
@@ -999,7 +1037,9 @@ def api_generate_comment():
     post_type = data.get("post_type", "general")
 
     comment = generate_comment(
-        mode=mode, category=category, post_caption=caption, post_type=post_type
+        mode=mode, category=category, post_caption=caption, post_type=post_type,
+        gemini_api_key=data.get("gemini_api_key", bot_state["settings"].get("gemini_api_key", "")),
+        use_emoji=data.get("use_emoji", bot_state["settings"].get("use_emoji", True)),
     )
     return jsonify({"success": True, "comment": comment})
 
@@ -1025,7 +1065,11 @@ def api_generate_bulk():
 
     comments = []
     for _ in range(count):
-        comment = generate_comment(mode=mode, category=category, post_caption=caption)
+        comment = generate_comment(
+            mode=mode, category=category, post_caption=caption,
+            gemini_api_key=data.get("gemini_api_key", bot_state["settings"].get("gemini_api_key", "")),
+            use_emoji=data.get("use_emoji", bot_state["settings"].get("use_emoji", True)),
+        )
         comments.append(comment)
 
     return jsonify({"success": True, "comments": comments})

@@ -1,13 +1,14 @@
 """
 ==============================================
-🔥 SMART COMMENT GENERATOR v2.0 🔥
+🔥 SMART COMMENT GENERATOR v3.0 🔥
 ==============================================
 Generate komentar CERDAS berdasarkan isi postingan.
 Bisa jalan TANPA API Key (mode template pintar).
 
 Mode:
 1. Smart Template - Analisis caption → generate komentar relevan
-2. AI Mode - Menggunakan OpenAI GPT (opsional, butuh API key)
+2. Gemini AI  - Google Gemini GRATIS (1500 req/hari)
+3. AI Mode   - OpenAI GPT (opsional, butuh API key berbayar)
 """
 
 import random
@@ -16,6 +17,33 @@ import os
 from dotenv import load_dotenv
 
 load_dotenv()
+
+
+def strip_emojis(text: str) -> str:
+    """Hapus semua emoji dari teks."""
+    emoji_pattern = re.compile(
+        "["
+        "\U0001F600-\U0001F64F"  # emoticons
+        "\U0001F300-\U0001F5FF"  # symbols & pictographs
+        "\U0001F680-\U0001F6FF"  # transport & map
+        "\U0001F1E0-\U0001F1FF"  # flags
+        "\U00002702-\U000027B0"
+        "\U000024C2-\U0001F251"
+        "\U0001F900-\U0001F9FF"  # supplemental symbols
+        "\U0001FA00-\U0001FA6F"  # chess symbols
+        "\U0001FA70-\U0001FAFF"  # symbols extended-A
+        "\U00002600-\U000026FF"  # misc symbols
+        "\U0000FE00-\U0000FE0F"  # variation selectors
+        "\U0000200D"             # zero width joiner
+        "\U00002B50"             # star
+        "\U0000203C-\U00003299"  # misc
+        "]+",
+        flags=re.UNICODE,
+    )
+    cleaned = emoji_pattern.sub("", text)
+    # Bersihkan spasi ganda
+    cleaned = re.sub(r"\s{2,}", " ", cleaned).strip()
+    return cleaned
 
 # =============================================
 # KEYWORD DETECTION PATTERNS
@@ -344,7 +372,7 @@ def detect_content_type(caption: str) -> str:
     return max(scores, key=scores.get)
 
 
-def smart_template_comment(caption: str = "", post_type: str = None) -> str:
+def smart_template_comment(caption: str = "", post_type: str = None, use_emoji: bool = True) -> str:
     """
     Generate komentar CERDAS berdasarkan analisis caption.
     TIDAK memerlukan API key.
@@ -363,13 +391,16 @@ def smart_template_comment(caption: str = "", post_type: str = None) -> str:
         comment = prefix + comment[0].lower() + comment[1:]
 
     # 15% chance emoji extra
-    if random.random() < 0.15:
+    if use_emoji and random.random() < 0.15:
         comment += f" {random.choice(GENZ_EMOJIS)}"
+
+    if not use_emoji:
+        comment = strip_emojis(comment)
 
     return comment
 
 
-def get_template_comment(category: str = None) -> str:
+def get_template_comment(category: str = None, use_emoji: bool = True) -> str:
     """Generate komentar dari template (backward compatible)."""
     if category and category in CONTENT_PATTERNS:
         templates = CONTENT_PATTERNS[category]["templates"]
@@ -380,24 +411,116 @@ def get_template_comment(category: str = None) -> str:
         templates = all_comments
 
     comment = random.choice(templates)
-    if random.random() < 0.3:
+    if use_emoji and random.random() < 0.3:
         comment += f" {random.choice(GENZ_EMOJIS)}"
+
+    if not use_emoji:
+        comment = strip_emojis(comment)
+
     return comment
 
 
-def get_ai_comment(post_caption: str = "", post_type: str = "general") -> str:
+# =============================================
+# GEMINI AI MODE (GRATIS!)
+# =============================================
+
+def get_gemini_comment(post_caption: str = "", post_type: str = "general", api_key: str = None, use_emoji: bool = True) -> str:
+    """
+    Generate komentar via Google Gemini AI (GRATIS).
+    Free tier: 1500 request/hari, 15 RPM.
+    Fallback ke smart template jika gagal.
+    """
+    try:
+        import google.generativeai as genai
+
+        # Cek API key
+        gemini_key = api_key or os.getenv("GEMINI_API_KEY", "")
+        if not gemini_key or gemini_key.startswith("AIza-your"):
+            print("⚠️ Gemini API key belum diset, fallback ke smart template")
+            return smart_template_comment(post_caption, post_type, use_emoji)
+
+        genai.configure(api_key=gemini_key)
+
+        # Deteksi kategori untuk context
+        detected_category = detect_content_type(post_caption) if post_caption else post_type
+
+        emoji_instruction = "- Pakai 2-4 emoji yang relevan" if use_emoji else "- JANGAN pakai emoji sama sekali, tanpa emoticon apapun"
+
+        system_prompt = f"""Kamu adalah Gen Z Indonesia yang gaul, friendly, dan relatable.
+Tugasmu: buat 1 komentar singkat untuk postingan social media.
+
+ATURAN KETAT:
+- Campur bahasa Indonesia-English (Jaksel style)
+{emoji_instruction}
+- Maksimal 1-2 kalimat pendek
+- Jangan formal, jangan baku
+- Jangan pakai hashtag (#)
+- Jangan pakai tanda kutip
+- Harus positif & supportive
+- Harus RELEVAN dengan isi caption/postingan
+- Bikin komentar yang natural, seperti teman beneran yang komen
+- Jangan mulai dengan "Wah" terus-terusan, variasikan
+
+Contoh gaya komentar:
+- "Aesthetic bgt sih ini! Bikin pengen ke sana juga 🌅✨"
+- "Slay banget bestie, outfit nya on point 🔥💅"
+- "This is so real, relate bgt sama gue 😭💀"
+- "Looks so good! Auto ngiler parah 🤤🔥"
+"""
+
+        user_prompt = f"Kategori konten: {detected_category}\n"
+        if post_caption:
+            user_prompt += f"Caption postingan: {post_caption}\n"
+        user_prompt += "\nBuatkan 1 komentar Gen Z yang relevan dan natural:"
+
+        model = genai.GenerativeModel("gemini-2.0-flash")
+        response = model.generate_content(
+            [
+                {"role": "user", "parts": [system_prompt + "\n\n" + user_prompt]}
+            ],
+            generation_config=genai.types.GenerationConfig(
+                max_output_tokens=150,
+                temperature=0.9,
+                top_p=0.95,
+            ),
+        )
+
+        comment = response.text.strip().strip('"').strip("'").strip()
+
+        # Validasi: komentar harus reasonable
+        if len(comment) < 5 or len(comment) > 300:
+            print(f"⚠️ Gemini output invalid (len={len(comment)}), fallback ke template")
+            return smart_template_comment(post_caption, post_type)
+
+        # Hapus hashtag kalau ada
+        comment = re.sub(r"#\w+", "", comment).strip()
+
+        # Hapus emoji jika user tidak ingin emoji
+        if not use_emoji:
+            comment = strip_emojis(comment)
+
+        return comment
+
+    except Exception as e:
+        print(f"⚠️ Gemini Error: {e}, falling back to smart template")
+        return smart_template_comment(post_caption, post_type, use_emoji)
+
+
+def get_ai_comment(post_caption: str = "", post_type: str = "general", use_emoji: bool = True) -> str:
     """Generate komentar via OpenAI GPT. Fallback ke smart template jika gagal."""
     try:
         from openai import OpenAI
 
         api_key = os.getenv("OPENAI_API_KEY", "")
         if not api_key or api_key.startswith("sk-your"):
-            return smart_template_comment(post_caption, post_type)
+            return smart_template_comment(post_caption, post_type, use_emoji)
+
+        emoji_rule = "Pakai 2-4 emoji." if use_emoji else "JANGAN pakai emoji apapun."
 
         client = OpenAI(api_key=api_key)
-        system_prompt = """Kamu adalah Gen Z Indonesia yang gaul dan friendly. 
+        system_prompt = f"""Kamu adalah Gen Z Indonesia yang gaul dan friendly. 
 Buat komentar singkat untuk postingan social media. 
-Campur Indonesia-English (Jaksel style). Pakai 2-4 emoji. Positif & supportive.
+Campur Indonesia-English (Jaksel style). {emoji_rule} Positif & supportive.
 Maksimal 1-2 kalimat. Jangan formal. Jangan pakai hashtag."""
 
         user_prompt = f"Buatkan 1 komentar Gen Z untuk postingan {post_type}."
@@ -414,10 +537,12 @@ Maksimal 1-2 kalimat. Jangan formal. Jangan pakai hashtag."""
             temperature=0.9,
         )
         comment = response.choices[0].message.content.strip().strip('"').strip("'")
+        if not use_emoji:
+            comment = strip_emojis(comment)
         return comment
     except Exception as e:
         print(f"⚠️ AI Error: {e}, falling back to smart template")
-        return smart_template_comment(post_caption)
+        return smart_template_comment(post_caption, use_emoji=use_emoji)
 
 
 def generate_comment(
@@ -425,20 +550,28 @@ def generate_comment(
     category: str = None,
     post_caption: str = "",
     post_type: str = "general",
+    gemini_api_key: str = None,
+    use_emoji: bool = True,
 ) -> str:
     """
-    Generate komentar. Default mode 'template' menggunakan SMART template
-    yang menganalisis caption otomatis.
+    Generate komentar. Mode yang tersedia:
+    - 'template'  : Smart template (analisis caption, TANPA API key)
+    - 'gemini'    : Google Gemini AI (GRATIS, butuh API key gratis)
+    - 'ai'        : OpenAI GPT (berbayar)
+    
+    use_emoji=False → komentar tanpa emoticon
     """
-    if mode == "ai":
-        return get_ai_comment(post_caption, post_type)
+    if mode == "gemini":
+        return get_gemini_comment(post_caption, post_type, gemini_api_key, use_emoji)
+    elif mode == "ai":
+        return get_ai_comment(post_caption, post_type, use_emoji)
     else:
         if post_caption:
-            return smart_template_comment(post_caption, post_type)
+            return smart_template_comment(post_caption, post_type, use_emoji)
         elif category:
-            return get_template_comment(category)
+            return get_template_comment(category, use_emoji)
         else:
-            return get_template_comment()
+            return get_template_comment(use_emoji=use_emoji)
 
 
 def get_categories() -> list:
@@ -464,10 +597,11 @@ def analyze_caption(caption: str) -> dict:
 
 if __name__ == "__main__":
     print("=" * 50)
-    print("🔥 SMART COMMENT GENERATOR v2.0 TEST 🔥")
+    print("🔥 SMART COMMENT GENERATOR v3.0 TEST 🔥")
     print("=" * 50)
     print(f"\n📊 Total template: {get_template_count()} komentar")
     print(f"📁 Kategori: {', '.join(get_categories())}")
+    print(f"🤖 Mode tersedia: template, gemini (GRATIS), ai (OpenAI)")
 
     test_captions = [
         "Nasi goreng spesial buatan mama 🍳 enak bgt!",
@@ -486,3 +620,15 @@ if __name__ == "__main__":
         print(f"\n  Caption: '{caption}'")
         print(f"  Detected: {result['detected_category']}")
         print(f"  Comment: {result['suggested_comment']}")
+
+    # Test Gemini jika API key tersedia
+    gemini_key = os.getenv("GEMINI_API_KEY", "")
+    if gemini_key and not gemini_key.startswith("AIza-your"):
+        print("\n--- Gemini AI Mode (GRATIS) ---")
+        for caption in test_captions[:3]:
+            comment = get_gemini_comment(caption, api_key=gemini_key)
+            print(f"\n  Caption: '{caption}'")
+            print(f"  Gemini: {comment}")
+    else:
+        print("\n💡 Set GEMINI_API_KEY untuk test Gemini AI mode")
+        print("   Dapatkan GRATIS di: https://aistudio.google.com/apikey")
