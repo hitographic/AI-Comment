@@ -78,7 +78,7 @@ bot_state = {
         "log": [],
     },
     "settings": {
-        "comment_mode": os.getenv("COMMENT_MODE", "template"),
+        "comment_mode": os.getenv("COMMENT_MODE", "gemini"),
         "gemini_api_key": os.getenv("GEMINI_API_KEY", ""),
         "use_emoji": True,
         "interval_min": int(os.getenv("COMMENT_INTERVAL_MIN", 30)),
@@ -578,7 +578,7 @@ class InstagramBot:
         return {"success": True, "commented": commented, "failed": failed}
 
     def auto_comment_loop(self):
-        """Legacy: Loop auto comment untuk hashtag/user list."""
+        """Auto comment loop untuk hashtag/user list. Supports multiple users."""
         settings = bot_state["settings"]
 
         while bot_state["instagram"]["is_running"]:
@@ -593,34 +593,63 @@ class InstagramBot:
 
                 hashtags = bot_state["instagram"]["target_hashtags"]
                 users = bot_state["instagram"]["target_users"]
+
+                if not hashtags and not users:
+                    add_log("instagram", "📭 Belum ada target hashtag/user", "warning")
+                    time.sleep(30)
+                    continue
+
+                add_log("instagram", f"🎯 Target: {len(users)} user, {len(hashtags)} hashtag", "info")
+
                 targets = []
 
                 for hashtag in hashtags:
+                    if not bot_state["instagram"]["is_running"]:
+                        break
                     add_log("instagram", f"🔍 Searching #{hashtag}...", "info")
                     posts = self.get_posts_by_hashtag(hashtag, amount=3)
+                    if posts:
+                        add_log("instagram", f"   📦 {len(posts)} post dari #{hashtag}", "info")
                     targets.extend(posts)
 
                 for user in users:
+                    if not bot_state["instagram"]["is_running"]:
+                        break
                     add_log("instagram", f"🔍 Checking @{user}...", "info")
-                    posts = self.get_user_posts(user, amount=2)
+                    posts = self.get_user_posts(user, amount=5)
+                    if posts:
+                        add_log("instagram", f"   📦 {len(posts)} post dari @{user}", "info")
+                    else:
+                        add_log("instagram", f"   ⚠️ Tidak bisa ambil post dari @{user}", "warning")
                     targets.extend(posts)
 
                 if not targets:
-                    add_log("instagram", "📭 Tidak ada postingan ditemukan", "info")
+                    add_log("instagram", "📭 Tidak ada postingan ditemukan dari semua target", "info")
                     time.sleep(60)
                     continue
 
+                add_log("instagram", f"📦 Total {len(targets)} post ditemukan. Mulai komen...", "success")
                 random.shuffle(targets)
 
-                for post in targets:
+                commented = 0
+                for i, post in enumerate(targets):
                     if not bot_state["instagram"]["is_running"]:
                         break
 
                     with ig_lock:
                         if bot_state["instagram"]["comments_today"] >= settings["max_per_day"]:
+                            add_log("instagram", f"⏸️ Limit harian tercapai ({settings['max_per_day']})", "warning")
                             break
 
                     caption = getattr(post, "caption_text", "") or ""
+                    
+                    # Log caption preview
+                    if caption:
+                        preview = caption[:80] + ("..." if len(caption) > 80 else "")
+                        add_log("instagram", f"\n📝 Post {i+1}/{len(targets)} — Caption: \"{preview}\"", "info")
+                    else:
+                        add_log("instagram", f"\n📝 Post {i+1}/{len(targets)} — (tanpa caption)", "info")
+
                     comment = generate_comment(
                         mode=settings["comment_mode"],
                         post_caption=caption,
@@ -628,18 +657,28 @@ class InstagramBot:
                         gemini_api_key=settings.get("gemini_api_key", ""),
                         use_emoji=settings.get("use_emoji", True),
                     )
+                    add_log("instagram", f"   💬 Komentar: \"{comment}\"", "info")
 
                     media_id = post.id if hasattr(post, "id") else post.pk
-                    self.comment_on_post(str(media_id), comment)
+                    result = self.comment_on_post(str(media_id), comment)
 
-                    if settings["auto_like"]:
-                        self.like_post(str(media_id))
+                    if result.get("success"):
+                        commented += 1
+                        if settings["auto_like"]:
+                            self.like_post(str(media_id))
 
                     socketio.emit("stats_update", get_dashboard_stats())
 
                     delay = random.randint(settings["interval_min"], settings["interval_max"])
-                    add_log("instagram", f"⏳ Menunggu {delay}s...", "info")
+                    add_log("instagram", f"   ⏳ Menunggu {delay}s...", "info")
                     time.sleep(delay)
+
+                add_log("instagram", f"\n✅ Ronde selesai! {commented}/{len(targets)} post berhasil dikomen", "success")
+
+                # Tunggu sebelum ronde berikutnya
+                if bot_state["instagram"]["is_running"]:
+                    add_log("instagram", "🔄 Menunggu 5 menit sebelum ronde berikutnya...", "info")
+                    time.sleep(300)
 
             except Exception as e:
                 add_log("instagram", f"❌ Error: {e}", "error")
@@ -902,13 +941,16 @@ def ig_auto_comment():
 
 @app.route("/api/instagram/start", methods=["POST"])
 def ig_start():
-    """Legacy: Start auto comment loop."""
+    """Start auto comment loop untuk multi-user dan multi-hashtag."""
     if not bot_state["instagram"]["is_logged_in"]:
         return jsonify({"success": False, "message": "Login dulu bestie! 🔑"})
 
     data = request.json or {}
     hashtags = data.get("hashtags", [])
     users = data.get("users", [])
+
+    if not hashtags and not users:
+        return jsonify({"success": False, "message": "Tambahkan minimal 1 hashtag atau user target! 🎯"})
 
     bot_state["instagram"]["target_hashtags"] = hashtags
     bot_state["instagram"]["target_users"] = users
@@ -917,8 +959,15 @@ def ig_start():
     thread = threading.Thread(target=ig_bot.auto_comment_loop, daemon=True)
     thread.start()
 
-    add_log("instagram", "🚀 Auto comment STARTED!", "success")
-    return jsonify({"success": True, "message": "Auto comment started! 🚀"})
+    targets_info = []
+    if users:
+        targets_info.append(f"{len(users)} user (@{', @'.join(users)})")
+    if hashtags:
+        targets_info.append(f"{len(hashtags)} hashtag (#{', #'.join(hashtags)})")
+    info = " + ".join(targets_info)
+
+    add_log("instagram", f"🚀 Auto comment STARTED! Target: {info}", "success")
+    return jsonify({"success": True, "message": f"Auto comment dimulai! Target: {info} 🚀"})
 
 
 @app.route("/api/instagram/stop", methods=["POST"])

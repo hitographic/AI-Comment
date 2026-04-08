@@ -428,10 +428,11 @@ def get_gemini_comment(post_caption: str = "", post_type: str = "general", api_k
     """
     Generate komentar via Google Gemini AI (GRATIS).
     Free tier: 1500 request/hari, 15 RPM.
+    Komentar HARUS relevan dengan isi caption/postingan.
     Fallback ke smart template jika gagal.
     """
     try:
-        import google.generativeai as genai
+        from google import genai
 
         # Cek API key
         gemini_key = api_key or os.getenv("GEMINI_API_KEY", "")
@@ -439,50 +440,65 @@ def get_gemini_comment(post_caption: str = "", post_type: str = "general", api_k
             print("⚠️ Gemini API key belum diset, fallback ke smart template")
             return smart_template_comment(post_caption, post_type, use_emoji)
 
-        genai.configure(api_key=gemini_key)
+        client = genai.Client(api_key=gemini_key)
 
-        # Deteksi kategori untuk context
-        detected_category = detect_content_type(post_caption) if post_caption else post_type
+        emoji_instruction = "- Pakai 1-3 emoji yang relevan dengan topik" if use_emoji else "- JANGAN pakai emoji/emoticon sama sekali"
 
-        emoji_instruction = "- Pakai 2-4 emoji yang relevan" if use_emoji else "- JANGAN pakai emoji sama sekali, tanpa emoticon apapun"
+        system_prompt = f"""Kamu adalah user Instagram biasa (Gen Z Indonesia, umur 18-25 tahun).
+Tugasmu: buat 1 komentar SINGKAT yang SANGAT RELEVAN dengan isi postingan.
 
-        system_prompt = f"""Kamu adalah Gen Z Indonesia yang gaul, friendly, dan relatable.
-Tugasmu: buat 1 komentar singkat untuk postingan social media.
+ATURAN PALING PENTING:
+- BACA CAPTION dengan teliti, pahami topik/produk/aktivitas yang dibahas
+- Komentar HARUS menyebut atau mereferensikan hal spesifik dari caption
+- Jika caption soal PARFUM → komentarin soal wanginya, tertarik, dll
+- Jika caption soal MAKANAN → komentarin soal rasa, pengen coba, dll  
+- Jika caption soal OUTFIT → komentarin soal style, keren, dll
+- Jika caption soal TEMPAT → komentarin soal tempatnya, pengen ke sana, dll
+- Jangan buat komentar generik yang bisa dipasang di post manapun!
 
-ATURAN KETAT:
-- Campur bahasa Indonesia-English (Jaksel style)
+ATURAN GAYA:
+- Campur bahasa Indonesia-English (Jaksel style) secara natural
 {emoji_instruction}
-- Maksimal 1-2 kalimat pendek
-- Jangan formal, jangan baku
+- Maksimal 1-2 kalimat pendek (10-25 kata)
+- Casual & friendly, seperti komentar teman beneran
+- Jangan formal, jangan baku, jangan kaku
 - Jangan pakai hashtag (#)
 - Jangan pakai tanda kutip
-- Harus positif & supportive
-- Harus RELEVAN dengan isi caption/postingan
-- Bikin komentar yang natural, seperti teman beneran yang komen
-- Jangan mulai dengan "Wah" terus-terusan, variasikan
+- Positif & supportive
+- Variasikan pembukaan (jangan selalu "Wah")
 
-Contoh gaya komentar:
-- "Aesthetic bgt sih ini! Bikin pengen ke sana juga 🌅✨"
-- "Slay banget bestie, outfit nya on point 🔥💅"
-- "This is so real, relate bgt sama gue 😭💀"
-- "Looks so good! Auto ngiler parah 🤤🔥"
-"""
+CONTOH KOMENTAR YANG BAGUS (RELEVAN):
+Caption: "Parfum baru, wanginya bikin level kegantengan naik"
+Komentar: "Tertarik nih sama parfumnya, wangi woody gitu ya? Auto checkout sih"
 
-        user_prompt = f"Kategori konten: {detected_category}\n"
+Caption: "Nasi goreng spesial buatan mama"  
+Komentar: "Auto laper liat nasi goreng nya, mama kamu jago masak bgt deh"
+
+Caption: "Sunset di Bali kemarin"
+Komentar: "Bali emang beda sih sunset nya, kapan ajak-ajak nih"
+
+Caption: "OOTD hari ini vintage style"
+Komentar: "Vintage vibes nya on point bgt, cocok bgt sama kamu style nya"
+
+CONTOH KOMENTAR YANG JELEK (GENERIK - JANGAN SEPERTI INI):
+- "Keren bgt!" (terlalu generik)
+- "Amazing!" (tidak relevan) 
+- "Nice post!" (tidak nyebut topik)"""
+
+        user_prompt = ""
         if post_caption:
-            user_prompt += f"Caption postingan: {post_caption}\n"
-        user_prompt += "\nBuatkan 1 komentar Gen Z yang relevan dan natural:"
+            user_prompt = f"Caption postingan:\n\"{post_caption}\"\n\nBuatkan 1 komentar yang SPESIFIK dan RELEVAN dengan caption di atas:"
+        else:
+            user_prompt = f"Postingan bertipe: {post_type}\nBuatkan 1 komentar casual yang relevan:"
 
-        model = genai.GenerativeModel("gemini-2.0-flash")
-        response = model.generate_content(
-            [
-                {"role": "user", "parts": [system_prompt + "\n\n" + user_prompt]}
-            ],
-            generation_config=genai.types.GenerationConfig(
-                max_output_tokens=150,
-                temperature=0.9,
-                top_p=0.95,
-            ),
+        response = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=system_prompt + "\n\n" + user_prompt,
+            config={
+                "max_output_tokens": 150,
+                "temperature": 0.9,
+                "top_p": 0.95,
+            },
         )
 
         comment = response.text.strip().strip('"').strip("'").strip()
@@ -546,7 +562,7 @@ Maksimal 1-2 kalimat. Jangan formal. Jangan pakai hashtag."""
 
 
 def generate_comment(
-    mode: str = "template",
+    mode: str = "gemini",
     category: str = None,
     post_caption: str = "",
     post_type: str = "general",
@@ -554,24 +570,23 @@ def generate_comment(
     use_emoji: bool = True,
 ) -> str:
     """
-    Generate komentar. Mode yang tersedia:
-    - 'template'  : Smart template (analisis caption, TANPA API key)
-    - 'gemini'    : Google Gemini AI (GRATIS, butuh API key gratis)
+    Generate komentar. Default mode 'gemini' (GRATIS).
+    Template hanya digunakan sebagai fallback jika Gemini gagal.
+    
+    Mode:
+    - 'gemini'    : Google Gemini AI (GRATIS, default) — komentar kontekstual
     - 'ai'        : OpenAI GPT (berbayar)
+    - 'template'  : Smart template offline (fallback)
     
     use_emoji=False → komentar tanpa emoticon
     """
-    if mode == "gemini":
+    if mode == "gemini" or mode == "template":
+        # Selalu coba Gemini dulu, fallback ke template otomatis di dalam fungsi
         return get_gemini_comment(post_caption, post_type, gemini_api_key, use_emoji)
     elif mode == "ai":
         return get_ai_comment(post_caption, post_type, use_emoji)
     else:
-        if post_caption:
-            return smart_template_comment(post_caption, post_type, use_emoji)
-        elif category:
-            return get_template_comment(category, use_emoji)
-        else:
-            return get_template_comment(use_emoji=use_emoji)
+        return get_gemini_comment(post_caption, post_type, gemini_api_key, use_emoji)
 
 
 def get_categories() -> list:
